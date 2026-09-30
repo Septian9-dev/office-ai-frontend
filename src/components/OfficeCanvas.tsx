@@ -86,64 +86,26 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: 
     lowerMsg.includes("estimasi") ||
     lowerMsg.includes("proyek") ||
     lowerMsg.includes("projek") ||
-    lowerMsg.includes("modern");
+    lowerMsg.includes("modern") ||
+    lowerMsg.includes("video") ||
+    lowerMsg.includes("iklan");
 
   if (isBriefingQuery) {
     if (agent.role === "CEO" || agent.division === "Executive") {
-      const techMgr = allAgents.find((a) => a.division === "Technology" && a.role === "Manager")?.name || "Alex (Tech Lead)";
+      const mktMgr = allAgents.find((a) => a.division === "Marketing" && a.role === "Manager")?.name || "Eko (Marketing Lead)";
       const prodMgr = allAgents.find((a) => a.division === "Product & Design" && a.role === "Manager")?.name || "Diana (Head of Product)";
       
-      return `Siap, instruksi diterima! Saya selaku CEO (Pak Pakar) langsung menginstruksikan tim terkait untuk mengeksekusi pembaruan ini.\n\n` +
+      return `Siap, instruksi diterima! Saya selaku CEO (Pak Pakar) langsung menginstruksikan tim terkait untuk mengeksekusi tugas ini.\n\n` +
         `📌 AGENDA UTAMA:\n"${userMsg}"\n\n` +
         `📋 PEMBAGIAN TUGAS SPESIFIK:\n` +
-        `1. 🎨 Divisi Product & Design (${prodMgr}):\n` +
-        `   • Mengarahkan Kevin (UI/UX Lead) & Raka (3D Artist) untuk merancang konsep visual & moodboard tampilan modern.\n\n` +
-        `2. 💻 Divisi Technology (${techMgr}):\n` +
-        `   • Mengarahkan Siti (Frontend Dev) untuk menganalisis estimasi waktu pengerjaan, kelayakan komponen React/WebGL, serta kebutuhan slicing UI.\n\n` +
-        `Seluruh tim sudah menerima instruksi dan langsung berkoordinasi. Laporan konsep awal dan estimasi timeline akan segera disajikan kepada Anda.`;
+        `1. 📢 Divisi Marketing (${mktMgr}):\n` +
+        `   • Mengarahkan Rina (Content Lead) membuat storyboard naskah & Gilang (Performance Mkt) menyusun strategi kampanye.\n\n` +
+        `2. 🎨 Divisi Product & Design (${prodMgr}):\n` +
+        `   • Mengarahkan Raka (3D Artist) untuk membuat pemodelan aset animasi 3D dan Sari (Graphic Designer) menyiapkan materi pendukung.\n\n` +
+        `Seluruh tim sudah menerima instruksi dan langsung berkoordinasi di ruang rapat. Laporan pengerjaan akan diperbarui pada masing-masing percakapan agen.`;
     } else {
-      return `Instruksi Anda mengenai "${userMsg}" telah saya teruskan langsung kepada Pak Pakar (CEO). Beliau sedang mengordinasikan tugas ini bersama Manajer Divisi terkait.`;
+      return `Instruksi Anda mengenai "${userMsg}" telah saya terima dari Pak Pakar (CEO). Tim kami sedang memproses drafnya.`;
     }
-  }
-
-  const isAskingForBoss =
-    lowerMsg.includes("siapa pimpinan") ||
-    lowerMsg.includes("siapa bos") ||
-    lowerMsg.includes("siapa atasan") ||
-    lowerMsg.includes("siapa manager") ||
-    lowerMsg.includes("siapa manajer") ||
-    lowerMsg.includes("siapa ceo") ||
-    lowerMsg.includes("siapa lead") ||
-    lowerMsg.includes("siapa head");
-
-  if (isAskingForBoss) {
-    const divisionManager = allAgents.find(
-      (a) => a.division === agent.division && (a.role === "Manager" || a.role === "CEO")
-    );
-    const ceo = allAgents.find((a) => a.role === "CEO" || a.division === "Executive");
-
-    if (agent.role === "CEO") {
-      return `Saya sendiri Pak Pakar yang memimpin perusahaan ini sebagai CEO. Setiap divisi dipimpin oleh manajer masing-masing untuk operasional harian.`;
-    }
-    return `Atasan langsung saya di divisi ${agent.division} adalah ${divisionManager ? divisionManager.name : "Manager tim"}, dan pimpinan tertinggi perusahaan adalah ${ceo ? ceo.name : "Pak Pakar (CEO)"}.`;
-  }
-
-  const formalKeywords = [
-    "laporan", "strategi", "analisis", "dokumen", "evaluasi", "proyeksi",
-    "rekomendasi", "prosedur", "anggaran", "sop", "kontrak", "arsitektur",
-    "audit", "rencana kerja", "roadmap", "kepatuhan", "kpi", "risiko"
-  ];
-  if (formalKeywords.some((key) => lowerMsg.includes(key))) {
-    return `Yth. Bapak/Ibu,\n\nMenindaklanjuti permohonan Anda mengenai "${userMsg}", hal ini telah dicatat dalam agenda prioritas Divisi ${agent.division}.\n\nHormat kami,\n${agent.name}\n${agent.role} - Divisi ${agent.division}`;
-  }
-
-  if (lowerMsg.includes("teman") || lowerMsg.includes("tim") || lowerMsg.includes("anggota")) {
-    const team = allAgents.filter((a) => a.division === agent.division && a.id !== agent.id);
-    return `Di divisi ${agent.division}, saya bekerjasama dengan ${team.map((a) => a.name).join(", ")}.`;
-  }
-
-  if (lowerMsg.includes("halo") || lowerMsg.includes("hai") || lowerMsg.includes("pagi") || lowerMsg.includes("siang")) {
-    return `Halo! Saya ${agent.name}. Ada yang bisa saya bantu terkait divisi ${agent.division} hari ini?`;
   }
 
   return `Mengenai "${userMsg}", poin tersebut telah saya pahami dan akan ditindaklanjuti oleh tim ${agent.division}.`;
@@ -162,14 +124,12 @@ function EnclosedDivisionRoom({
   color,
   position,
   size,
-  children,
 }: {
   title: string;
   icon: string;
   color: string;
   position: [number, number, number];
   size: [number, number];
-  children?: React.ReactNode;
 }) {
   const [w, d] = size;
   const h = 2.2;
@@ -238,8 +198,6 @@ function EnclosedDivisionRoom({
           </div>
         </Html>
       </group>
-
-      {children}
     </group>
   );
 }
@@ -425,7 +383,7 @@ function AutonomousAgent3D({
   useEffect(() => {
     if (isBackendWorking || isTargetInvolved) {
       setWaypointQueue([
-        { x: 0, y: 0, z: -5.0, name: "Ruang CEO (Rapat Lintas Divisi) 🏃‍♂️️" },
+        { x: 0, y: 0, z: -5.0, name: "Ruang CEO (Rapat Lintas Divisi) 🏃‍♂️" },
         { x: homeX, y: 0, z: chairZ, name: "Kembali Eksekusi Tugas 💼" }
       ]);
       setEmote("🏃‍♂️ BERKOORDINASI...");
@@ -560,7 +518,6 @@ export default function OfficeCanvas() {
   const [unreadAgentIds, setUnreadAgentIds] = useState<string[]>([]);
   const [activityLogs, setActivityLogs] = useState<{ id: string; text: string; time: string }[]>([]);
 
-  // State Modal CEO Briefing Form Eksplisit
   const [isCeoModalOpen, setIsCeoModalOpen] = useState(false);
   const [ceoBriefInput, setCeoBriefInput] = useState("");
 
@@ -624,14 +581,10 @@ export default function OfficeCanvas() {
     setSelectedAgent(agent);
     setActiveTab("pribadi");
 
-    // Bersihkan unread badge untuk agen ini
     setUnreadAgentIds((prev) => prev.filter((id) => id !== agent.id));
 
-    if (messagesByAgent[agent.id]) {
-      setMessages(messagesByAgent[agent.id]);
-    } else {
-      setMessages([]);
-    }
+    const localMsgs = messagesByAgent[agent.id] || [];
+    setMessages(localMsgs);
 
     try {
       const res = await fetch(`https://office-ai-backend.vercel.app/messages/${agent.id}`);
@@ -712,6 +665,7 @@ export default function OfficeCanvas() {
     }
   };
 
+  // PEMBARUAN UTAMA: MODAL BRIEFING CEO DENGAN STATE UPDATE INSTAN
   const handleSendCeoBriefModal = async () => {
     if (!ceoBriefInput.trim()) return;
     const briefText = ceoBriefInput;
@@ -719,9 +673,18 @@ export default function OfficeCanvas() {
     setIsCeoModalOpen(false);
     setLoading(true);
 
-    // Cari agen CEO
     const ceoAgent = agents.find((a) => a.id === "ceo-main") || agents[0];
     setSelectedAgent(ceoAgent);
+    setActiveTab("pribadi");
+
+    const userMsgObj = { sender: "You", text: briefText };
+
+    // 1. Masukkan pertanyaan pengguna ke state percakapan Pak Pakar
+    setMessages((prev) => [...(messagesByAgent["ceo-main"] || []), userMsgObj]);
+    setMessagesByAgent((prev) => ({
+      ...prev,
+      "ceo-main": [...(prev["ceo-main"] || []), userMsgObj],
+    }));
 
     try {
       const res = await fetch("https://office-ai-backend.vercel.app/chat/agent", {
@@ -730,15 +693,35 @@ export default function OfficeCanvas() {
         body: JSON.stringify({ agent_id: "ceo-main", message: briefText }),
       });
       const data = await res.json();
-      
+      const replyText = Array.isArray(data.response) ? data.response[0]?.text : data.response;
+
+      const replyMsgObj = {
+        sender: data.agent_name || "Pak Pakar (CEO)",
+        text: replyText || generateNaturalHumanResponse(ceoAgent, briefText, agents),
+      };
+
+      // 2. Masukkan balasan Pak Pakar langsung ke UI percakapan
+      setMessages((prev) => [...prev, replyMsgObj]);
+      setMessagesByAgent((prev) => ({
+        ...prev,
+        "ceo-main": [...(prev["ceo-main"] || []), replyMsgObj],
+      }));
+
       if (data.involved_ids && Array.isArray(data.involved_ids)) {
         setInvolvedAgentIds(data.involved_ids);
         setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids])));
         setTimeout(() => setInvolvedAgentIds([]), 14000);
       }
-
-      handleSelectAgent(ceoAgent);
     } catch {
+      const fallbackReply = generateNaturalHumanResponse(ceoAgent, briefText, agents);
+      const replyMsgObj = { sender: ceoAgent.name, text: fallbackReply };
+
+      setMessages((prev) => [...prev, replyMsgObj]);
+      setMessagesByAgent((prev) => ({
+        ...prev,
+        "ceo-main": [...(prev["ceo-main"] || []), replyMsgObj],
+      }));
+
       setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
       setUnreadAgentIds(["uiux-1", "design-3d", "fe-dev-1"]);
       setTimeout(() => setInvolvedAgentIds([]), 14000);
@@ -754,7 +737,6 @@ export default function OfficeCanvas() {
 
   return (
     <div className="relative w-screen h-screen bg-slate-900 overflow-hidden font-sans select-none">
-      {/* HEADER & BUTTON BRIEFING CEO */}
       <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur border border-slate-200 text-slate-800 p-3.5 rounded-2xl shadow-lg flex items-center gap-4">
         <div>
           <h1 className="font-bold text-sm tracking-wide flex items-center gap-2 text-indigo-900">
@@ -770,7 +752,6 @@ export default function OfficeCanvas() {
         </button>
       </div>
 
-      {/* MODAL FORM BRIEFING CEO EKSPLISIT */}
       {isCeoModalOpen && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 space-y-4">
@@ -789,7 +770,7 @@ export default function OfficeCanvas() {
               rows={4}
               value={ceoBriefInput}
               onChange={(e) => setCeoBriefInput(e.target.value)}
-              placeholder="Contoh: Pak Pakar, perusahaan mau meluncurkan pembaruan aplikasi mobile. Tolong kumpulkan divisi Product dan Technology untuk buat rencana kerja..."
+              placeholder="Contoh: Pak Pakar, kita mau buat video iklan untuk peluncuran produk baru. Minta Eko buat konsep videonya dan Raka siapkan animasi 3D..."
               className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:border-rose-500 text-slate-800"
             />
             <div className="flex justify-end gap-2 pt-2">
@@ -810,7 +791,6 @@ export default function OfficeCanvas() {
         </div>
       )}
 
-      {/* LIVE ACTIVITY LOGS */}
       <div className="absolute bottom-4 left-4 z-10 w-80 max-h-48 bg-white/85 backdrop-blur border border-slate-200 text-slate-800 p-3 rounded-2xl shadow-lg overflow-hidden pointer-events-none">
         <h3 className="text-[11px] font-bold text-indigo-600 mb-2 flex items-center gap-1">
           <span>📡</span> LIVE AGENT ACTIVITIES
@@ -856,7 +836,6 @@ export default function OfficeCanvas() {
         <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.05} minDistance={5} maxDistance={40} />
       </Canvas>
 
-      {/* SIDEBAR PANEL CHAT */}
       {selectedAgent && (
         <div className="absolute top-0 right-0 w-96 h-full bg-white/95 border-l border-slate-200 backdrop-blur text-slate-800 flex flex-col z-20 shadow-2xl">
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
