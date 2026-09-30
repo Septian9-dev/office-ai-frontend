@@ -610,10 +610,8 @@ export default function OfficeCanvas() {
 
   const handleSelectAgent = async (agent: Agent) => {
     setSelectedAgent(agent);
-    // Otomatis membuka tab percakapan pribadi agar obrolan langsung terlihat
     setActiveTab("pribadi");
 
-    // Tampilkan pesan dari memori lokal terlebih dahulu jika ada
     if (messagesByAgent[agent.id]) {
       setMessages(messagesByAgent[agent.id]);
     } else {
@@ -635,7 +633,7 @@ export default function OfficeCanvas() {
         }));
       }
     } catch {
-      // Fallback tetap menggunakan memori lokal
+      // Fallback
     }
   };
 
@@ -645,7 +643,6 @@ export default function OfficeCanvas() {
     const currentAgentId = selectedAgent.id;
     const userMsgObj = { sender: "You", text: userMsg };
 
-    // Update state tampilan & memori lokal
     setMessages((prev) => [...prev, userMsgObj]);
     setMessagesByAgent((prev) => ({
       ...prev,
@@ -677,9 +674,6 @@ export default function OfficeCanvas() {
       setMessagesByAgent((prev) => ({
         ...prev,
         [currentAgentId]: [...(prev[currentAgentId] || []), replyMsgObj],
-        ...(data.agent_id && data.agent_id !== currentAgentId
-          ? { [data.agent_id]: [...(prev[data.agent_id] || []), userMsgObj, replyMsgObj] }
-          : {}),
       }));
     } catch {
       setTimeout(() => {
@@ -792,7 +786,7 @@ export default function OfficeCanvas() {
                 activeTab === "pribadi" ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              <span>💬</span> Percakapan Pribadi
+              <span>💬</span> Percakapan
             </button>
           </div>
 
@@ -832,25 +826,39 @@ export default function OfficeCanvas() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col justify-between p-4 overflow-hidden">
+              {/* TAMPILAN PERCAKAPAN 2 ARAH (DAPAT MEMBEDAKAN PESAN USER, CEO, ATAU KARYAWAN) */}
               <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-1 mb-3">
                 {messages.length === 0 && (
                   <div className="text-slate-400 text-center mt-12 space-y-1">
-                    <p className="font-medium">Belum ada obrolan pribadi</p>
-                    <p className="text-[11px] text-slate-400">Ketik pesan di bawah untuk mulai berdiskusi secara langsung dengan {selectedAgent.name}.</p>
+                    <p className="font-medium">Belum ada obrolan</p>
+                    <p className="text-[11px] text-slate-400">Ketik pesan di bawah untuk berdiskusi dengan {selectedAgent.name}.</p>
                   </div>
                 )}
-                {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-2.5 rounded-xl max-w-[85%] ${
-                      msg.sender === "You" ? "bg-indigo-600 text-white ml-auto" : "bg-slate-100 text-slate-800 border border-slate-200"
-                    }`}
-                  >
-                    <p className="text-[9px] opacity-70 mb-0.5">{msg.sender}</p>
-                    <p className="leading-relaxed whitespace-pre-line">{msg.text}</p>
-                  </div>
-                ))}
-                {loading && <div className="text-amber-600 text-xs animate-pulse">⚡ {selectedAgent.name} sedang membalas...</div>}
+                {messages.map((msg, idx) => {
+                  const isUser = msg.sender === "You";
+                  const isCEO = msg.sender.includes("Pak Pakar") || msg.sender.includes("CEO");
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-2.5 rounded-xl max-w-[88%] ${
+                        isUser
+                          ? "bg-indigo-600 text-white ml-auto"
+                          : isCEO
+                          ? "bg-rose-50 text-rose-950 border border-rose-200 mr-auto"
+                          : "bg-slate-100 text-slate-800 border border-slate-200 mr-auto"
+                      }`}
+                    >
+                      <p className={`text-[9px] font-bold mb-1 flex items-center gap-1 ${
+                        isUser ? "text-indigo-200" : isCEO ? "text-rose-700" : "text-slate-500"
+                      }`}>
+                        <span>{isUser ? "👤 You" : isCEO ? "👑 " + msg.sender : "💬 " + msg.sender}</span>
+                      </p>
+                      <p className="leading-relaxed whitespace-pre-line">{msg.text}</p>
+                    </div>
+                  );
+                })}
+                {loading && <div className="text-amber-600 text-xs animate-pulse">⚡ {selectedAgent.name} sedang merespons...</div>}
               </div>
 
               <div className="flex gap-2 pt-2 border-t border-slate-200">
@@ -859,7 +867,7 @@ export default function OfficeCanvas() {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                  placeholder={`Pesan pribadi ke ${selectedAgent.name}...`}
+                  placeholder={`Pesan ke ${selectedAgent.name}...`}
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-800"
                 />
                 <button onClick={handleSendMessage} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-xl font-medium shadow">
