@@ -10,6 +10,7 @@ interface Agent {
   name: string;
   division: string;
   role: string;
+  system_prompt?: string;
   position_x: number;
   position_y: number;
   position_z: number;
@@ -377,7 +378,7 @@ function AllDivisionRooms() {
       {/* ⚖️ 6. Finance & Legal Suite */}
       <EnclosedDivisionRoom
         title="FINANCE & LEGAL"
-        icon="⚖️️"
+        icon="⚖"
         color="#ca8a04"
         position={[0, 4.5, -3.0]}
         size={[7.0, 5.0]}
@@ -1255,54 +1256,414 @@ export default function OfficeCanvas() {
   // MEMUAT SELURUH 36 AGENT LENGKAP BILA BACKEND TERDAPAT DELAY/FALLBACK
   const get36FullMockAgents = (): Agent[] => [
     // 0. Executive (CEO)
-    { id: "ceo-main", name: "Pak Pakar (CEO)", division: "Executive", role: "CEO", position_x: 0.0, position_y: 0.0, position_z: -3.0, status: "Active" },
+    {
+      id: "ceo-main",
+      name: "Pak Pakar (CEO)",
+      division: "Executive",
+      role: "CEO",
+      system_prompt: "Kamu adalah CEO/Chief Executive Officer. Tugasmu menganalisis strategi perusahaan skala besar, menentukan divisi mana saja yang harus bergerak, dan menyusun laporan konsolidasi eksekutif.",
+      position_x: 0.0,
+      position_y: 0.0,
+      position_z: -3.0,
+      status: "Active",
+    },
 
     // 1. Technology Division
-    { id: "tech-lead", name: "Alex (Tech Lead)", division: "Technology", role: "Manager", position_x: -6.5, position_y: 0.0, position_z: -2.0, status: "Active" },
-    { id: "fe-dev-1", name: "Siti (Frontend Dev)", division: "Technology", role: "Specialist", position_x: -8.5, position_y: 0.0, position_z: -2.0, status: "Active" },
-    { id: "fe-dev-2", name: "Rian (Mobile Dev)", division: "Technology", role: "Specialist", position_x: -10.5, position_y: 0.0, position_z: -2.0, status: "Active" },
-    { id: "be-dev-1", name: "Budi (Backend Dev)", division: "Technology", role: "Specialist", position_x: -6.5, position_y: 0.0, position_z: -4.0, status: "Active" },
-    { id: "be-dev-2", name: "Dedi (DevOps Eng)", division: "Technology", role: "Specialist", position_x: -8.5, position_y: 0.0, position_z: -4.0, status: "Active" },
-    { id: "qa-eng", name: "Maya (QA Lead)", division: "Technology", role: "Specialist", position_x: -10.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+    {
+      id: "tech-lead",
+      name: "Alex (Tech Lead)",
+      division: "Technology",
+      role: "Manager",
+      system_prompt: "Kamu adalah Tech Lead. Tugasmu menganalisis arsitektur sistem, memecah brief teknis, dan mengkoordinasikan tim developer.",
+      position_x: -6.5,
+      position_y: 0.0,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "fe-dev-1",
+      name: "Siti (Frontend Dev)",
+      division: "Technology",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Web Frontend Developer spesialis React, Next.js, TailwindCSS, dan WebGL.",
+      position_x: -8.5,
+      position_y: 0.0,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "fe-dev-2",
+      name: "Rian (Mobile Dev)",
+      division: "Technology",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Mobile App Developer spesialis Flutter dan React Native.",
+      position_x: -10.5,
+      position_y: 0.0,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "be-dev-1",
+      name: "Budi (Backend Dev)",
+      division: "Technology",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Backend Developer ahli Python FastAPI, Node.js, dan arsitektur Microservices.",
+      position_x: -6.5,
+      position_y: 0.0,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "be-dev-2",
+      name: "Dedi (DevOps Eng)",
+      division: "Technology",
+      role: "Specialist",
+      system_prompt: "Kamu adalah DevOps Engineer ahli Docker, Kubernetes, CI/CD pipeline, dan cloud deployment.",
+      position_x: -8.5,
+      position_y: 0.0,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "qa-eng",
+      name: "Maya (QA Lead)",
+      division: "Technology",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Quality Assurance Engineer spesialis automated testing, end-to-end test, dan bug tracking.",
+      position_x: -10.5,
+      position_y: 0.0,
+      position_z: -4.0,
+      status: "Active",
+    },
 
     // 2. Product & Design Division
-    { id: "product-head", name: "Diana (Head of Product)", division: "Product & Design", role: "Manager", position_x: 6.5, position_y: 0.0, position_z: -2.0, status: "Active" },
-    { id: "uiux-1", name: "Kevin (UI/UX Lead)", division: "Product & Design", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: -2.0, status: "Active" },
-    { id: "uiux-2", name: "Nadia (UX Researcher)", division: "Product & Design", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: -2.0, status: "Active" },
-    { id: "design-3d", name: "Raka (3D Artist)", division: "Product & Design", role: "Specialist", position_x: 6.5, position_y: 0.0, position_z: -4.0, status: "Active" },
-    { id: "graphic-des", name: "Sari (Graphic Designer)", division: "Product & Design", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: -4.0, status: "Active" },
-    { id: "scrum-master", name: "Bagas (Scrum Master)", division: "Product & Design", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+    {
+      id: "product-head",
+      name: "Diana (Head of Product)",
+      division: "Product & Design",
+      role: "Manager",
+      system_prompt: "Kamu adalah Head of Product. Tugasmu merancang PRD, menentukan prioritas backlog, dan mengelola roadmap produk.",
+      position_x: 6.5,
+      position_y: 0.0,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "uiux-1",
+      name: "Kevin (UI/UX Lead)",
+      division: "Product & Design",
+      role: "Specialist",
+      system_prompt: "Kamu adalah UI/UX Lead yang ahli membuat Wireframe, Figma Prototype, dan Design System.",
+      position_x: 8.5,
+      position_y: 0.0,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "uiux-2",
+      name: "Nadia (UX Researcher)",
+      division: "Product & Design",
+      role: "Specialist",
+      system_prompt: "Kamu adalah UX Researcher yang berfokus pada user interview, usability testing, dan pemetaan persona.",
+      position_x: 10.5,
+      position_y: 0.0,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "design-3d",
+      name: "Raka (3D Artist)",
+      division: "Product & Design",
+      role: "Specialist",
+      system_prompt: "Kamu adalah 3D Modeler & Motion Designer ahli Blender dan aset WebGL.",
+      position_x: 6.5,
+      position_y: 0.0,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "graphic-des",
+      name: "Sari (Graphic Designer)",
+      division: "Product & Design",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Graphic Designer pengembang aset visual marketing, ilustrasi, dan identitas brand.",
+      position_x: 8.5,
+      position_y: 0.0,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "scrum-master",
+      name: "Bagas (Scrum Master)",
+      division: "Product & Design",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Scrum Master yang mengawal kelancaran sprint, daily standup, dan membuang hambatan tim.",
+      position_x: 10.5,
+      position_y: 0.0,
+      position_z: -4.0,
+      status: "Active",
+    },
 
     // 3. Marketing Division
-    { id: "mkt-lead", name: "Eko (Marketing Lead)", division: "Marketing", role: "Manager", position_x: 6.5, position_y: 0.0, position_z: 2.5, status: "Active" },
-    { id: "content-writer", name: "Rina (Content Lead)", division: "Marketing", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: 2.5, status: "Active" },
-    { id: "seo-spec", name: "Fajar (SEO Specialist)", division: "Marketing", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: 2.5, status: "Active" },
-    { id: "social-media", name: "Anisa (Social Media Mgr)", division: "Marketing", role: "Specialist", position_x: 6.5, position_y: 0.0, position_z: 4.5, status: "Active" },
-    { id: "ppc-spec", name: "Gilang (Performance Mkt)", division: "Marketing", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: 4.5, status: "Active" },
-    { id: "pr-spec", name: "Tania (PR Specialist)", division: "Marketing", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: 4.5, status: "Active" },
+    {
+      id: "mkt-lead",
+      name: "Eko (Marketing Lead)",
+      division: "Marketing",
+      role: "Manager",
+      system_prompt: "Kamu adalah CMO/Marketing Lead yang menyusun strategi campaign, positioning pasar, dan alokasi budget marketing.",
+      position_x: 6.5,
+      position_y: 0.0,
+      position_z: 2.5,
+      status: "Active",
+    },
+    {
+      id: "content-writer",
+      name: "Rina (Content Lead)",
+      division: "Marketing",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Content Strategist dan Copywriter spesialis artikel SEO, landing page, dan ad copy.",
+      position_x: 8.5,
+      position_y: 0.0,
+      position_z: 2.5,
+      status: "Active",
+    },
+    {
+      id: "seo-spec",
+      name: "Fajar (SEO Specialist)",
+      division: "Marketing",
+      role: "Specialist",
+      system_prompt: "Kamu adalah SEO Specialist spesialis keyword research, technical SEO, dan link building.",
+      position_x: 10.5,
+      position_y: 0.0,
+      position_z: 2.5,
+      status: "Active",
+    },
+    {
+      id: "social-media",
+      name: "Anisa (Social Media Mgr)",
+      division: "Marketing",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Social Media Manager pengelola konten Instagram, TikTok, LinkedIn, dan X.",
+      position_x: 6.5,
+      position_y: 0.0,
+      position_z: 4.5,
+      status: "Active",
+    },
+    {
+      id: "ppc-spec",
+      name: "Gilang (Performance Mkt)",
+      division: "Marketing",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Media Buyer ahli mengoptimalkan Google Ads, Meta Ads, dan conversion funnel.",
+      position_x: 8.5,
+      position_y: 0.0,
+      position_z: 4.5,
+      status: "Active",
+    },
+    {
+      id: "pr-spec",
+      name: "Tania (PR Specialist)",
+      division: "Marketing",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Public Relations Manager spesialis press release, hubungan media, dan brand communication.",
+      position_x: 10.5,
+      position_y: 0.0,
+      position_z: 4.5,
+      status: "Active",
+    },
 
     // 4. Sales & BD Division (Lantai 2)
-    { id: "sales-lead", name: "Hendra (VP of Sales)", division: "Sales & BD", role: "Manager", position_x: -6.5, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "account-exec", name: "Lia (Account Executive)", division: "Sales & BD", role: "Specialist", position_x: -8.5, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "bizdev-1", name: "Reza (BizDev Manager)", division: "Sales & BD", role: "Specialist", position_x: -10.5, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "cust-success", name: "Putri (Customer Success)", division: "Sales & BD", role: "Specialist", position_x: -6.5, position_y: 4.5, position_z: -4.0, status: "Active" },
-    { id: "sales-dev", name: "Taufik (SDR Lead)", division: "Sales & BD", role: "Specialist", position_x: -8.5, position_y: 4.5, position_z: -4.0, status: "Active" },
-    { id: "crm-spec", name: "Vina (CRM Specialist)", division: "Sales & BD", role: "Specialist", position_x: -10.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+    {
+      id: "sales-lead",
+      name: "Hendra (VP of Sales)",
+      division: "Sales & BD",
+      role: "Manager",
+      system_prompt: "Kamu adalah Head of Sales. Tugasmu memimpin strategi B2B closing, penetapan kuota sales, dan negosiasi kontrak besar.",
+      position_x: -6.5,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "account-exec",
+      name: "Lia (Account Executive)",
+      division: "Sales & BD",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Account Executive yang menangani pitching produk ke klien, demo produk, dan deal closing.",
+      position_x: -8.5,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "bizdev-1",
+      name: "Reza (BizDev Manager)",
+      division: "Sales & BD",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Business Development spesialis eksplorasi kemitraan strategis dan peluang pasar baru.",
+      position_x: -10.5,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "cust-success",
+      name: "Putri (Customer Success)",
+      division: "Sales & BD",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Customer Success Manager pengelola hubungan jangka panjang dan retensi akun klien.",
+      position_x: -6.5,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "sales-dev",
+      name: "Taufik (SDR Lead)",
+      division: "Sales & BD",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Sales Development Representative pengumpul prospek leads potensial.",
+      position_x: -8.5,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "crm-spec",
+      name: "Vina (CRM Specialist)",
+      division: "Sales & BD",
+      role: "Specialist",
+      system_prompt: "Kamu adalah CRM Manager spesialis HubSpot, otomatisasi email sales, dan lead scoring.",
+      position_x: -10.5,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
 
     // 5. Finance & Legal Division (Lantai 2)
-    { id: "fin-lead", name: "Bambang (CFO)", division: "Finance & Legal", role: "Manager", position_x: -1.8, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "accountant", name: "Yuni (Senior Accountant)", division: "Finance & Legal", role: "Specialist", position_x: 0.0, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "legal-counsel", name: "Agung (Legal Counsel)", division: "Finance & Legal", role: "Specialist", position_x: 1.8, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "payroll-spec", name: "Dewi (Payroll Admin)", division: "Finance & Legal", role: "Specialist", position_x: -1.8, position_y: 4.5, position_z: -4.0, status: "Active" },
-    { id: "procurement", name: "Irfan (Procurement Mgr)", division: "Finance & Legal", role: "Specialist", position_x: 0.0, position_y: 4.5, position_z: -4.0, status: "Active" },
-    { id: "auditor", name: "Citra (Internal Auditor)", division: "Finance & Legal", role: "Specialist", position_x: 1.8, position_y: 4.5, position_z: -4.0, status: "Active" },
+    {
+      id: "fin-lead",
+      name: "Bambang (CFO)",
+      division: "Finance & Legal",
+      role: "Manager",
+      system_prompt: "Kamu adalah CFO yang mengendalikan manajemen arus kas, proyeksi keuangan, dan perencanaan budget perusahaan.",
+      position_x: -1.8,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "accountant",
+      name: "Yuni (Senior Accountant)",
+      division: "Finance & Legal",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Senior Accountant pengelola laporan keuangan, jurnal transaksi, dan perpajakan.",
+      position_x: 0.0,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "legal-counsel",
+      name: "Agung (Legal Counsel)",
+      division: "Finance & Legal",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Legal Counsel ahli penyusunan draf kontrak kerja sama, NDA, dan kepatuhan hukum.",
+      position_x: 1.8,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "payroll-spec",
+      name: "Dewi (Payroll Admin)",
+      division: "Finance & Legal",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Payroll Specialist pengurus kalkulasi gaji, BPJS, dan tunjangan karyawan.",
+      position_x: -1.8,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "procurement",
+      name: "Irfan (Procurement Mgr)",
+      division: "Finance & Legal",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Procurement Manager pengurus pengadaan sarana kerja dan negosiasi vendor.",
+      position_x: 0.0,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "auditor",
+      name: "Citra (Internal Auditor)",
+      division: "Finance & Legal",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Internal Auditor pengawas kepatuhan prosedur keuangan operasional.",
+      position_x: 1.8,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
 
     // 6. HR & Operations Division (Lantai 2)
-    { id: "hr-lead", name: "Siska (CHRO)", division: "HR & Operations", role: "Manager", position_x: 6.5, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "recruiter-1", name: "Doni (Tech Recruiter)", division: "HR & Operations", role: "Specialist", position_x: 8.5, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "hrbp", name: "Indah (HRBP)", division: "HR & Operations", role: "Specialist", position_x: 10.5, position_y: 4.5, position_z: -2.0, status: "Active" },
-    { id: "office-mgr", name: "Joko (Office Manager)", division: "HR & Operations", role: "Specialist", position_x: 7.5, position_y: 4.5, position_z: -4.0, status: "Active" },
-    { id: "people-dev", name: "Laras (Learning & Dev)", division: "HR & Operations", role: "Specialist", position_x: 9.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+    {
+      id: "hr-lead",
+      name: "Siska (CHRO)",
+      division: "HR & Operations",
+      role: "Manager",
+      system_prompt: "Kamu adalah Head of HR pengelola strategi budaya kerja, struktur organisasi, dan retensi talenta.",
+      position_x: 6.5,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "recruiter-1",
+      name: "Doni (Tech Recruiter)",
+      division: "HR & Operations",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Technical Recruiter pengurus rekrutmen talenta software engineering dan AI.",
+      position_x: 8.5,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "hrbp",
+      name: "Indah (HRBP)",
+      division: "HR & Operations",
+      role: "Specialist",
+      system_prompt: "Kamu adalah HR Business Partner pendamping kebutuhan operasional tiap divisi.",
+      position_x: 10.5,
+      position_y: 4.5,
+      position_z: -2.0,
+      status: "Active",
+    },
+    {
+      id: "office-mgr",
+      name: "Joko (Office Manager)",
+      division: "HR & Operations",
+      role: "Specialist",
+      system_prompt: "Kamu adalah Office Manager pengelola fasilitas kantor dan operasional harian.",
+      position_x: 7.5,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
+    {
+      id: "people-dev",
+      name: "Laras (Learning & Dev)",
+      division: "HR & Operations",
+      role: "Specialist",
+      system_prompt: "Kamu adalah People Development Specialist pengurus program pelatihan dan upsilling karyawan.",
+      position_x: 9.5,
+      position_y: 4.5,
+      position_z: -4.0,
+      status: "Active",
+    },
   ];
 
   const handleStatusUpdate = (id: string, text: string) => {
@@ -1310,6 +1671,32 @@ export default function OfficeCanvas() {
       { id, text, time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) },
       ...prev.slice(0, 7),
     ]);
+  };
+
+  const handleSelectAgent = async (agent: Agent) => {
+    setSelectedAgent(agent);
+
+    const defaultPrompt = agent.system_prompt || `Halo! Saya ${agent.name} dari divisi ${agent.division}.`;
+    const initialMessage = {
+      sender: agent.name,
+      text: `📋 [BRIEF & ROLE AGEN]\n${defaultPrompt}`,
+    };
+
+    setMessages([initialMessage]);
+
+    try {
+      const res = await fetch(`https://office-ai-backend.vercel.app/messages/${agent.id}`);
+      const data = await res.json();
+      if (data.messages && data.messages.length > 0) {
+        const history = data.messages.map((m: { sender: string; text: string }) => ({
+          sender: m.sender === "user" ? "You" : agent.name,
+          text: m.text,
+        }));
+        setMessages([initialMessage, ...history]);
+      }
+    } catch {
+      // Menggunakan pesan brief awal bila riwayat belum siap
+    }
   };
 
   const handleSendMessage = async () => {
@@ -1418,10 +1805,7 @@ export default function OfficeCanvas() {
             agent={agent}
             isSelected={selectedAgent?.id === agent.id}
             isBackendWorking={loading && selectedAgent?.id === agent.id}
-            onSelect={(a) => {
-              setSelectedAgent(a);
-              setMessages([]);
-            }}
+            onSelect={handleSelectAgent}
             onStatusUpdate={handleStatusUpdate}
           />
         ))}
@@ -1456,7 +1840,7 @@ export default function OfficeCanvas() {
                 }`}
               >
                 <p className="text-[9px] opacity-70 mb-0.5">{msg.sender}</p>
-                <p className="leading-relaxed">{msg.text}</p>
+                <p className="leading-relaxed whitespace-pre-line">{msg.text}</p>
               </div>
             ))}
             {loading && <div className="text-amber-600 text-xs animate-pulse">⚡ {selectedAgent.name} sedang berpikir...</div>}
