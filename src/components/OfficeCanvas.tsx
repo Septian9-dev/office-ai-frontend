@@ -398,6 +398,7 @@ function AutonomousAgent3D({
   isSelected,
   isBackendWorking,
   isTargetInvolved,
+  hasUnread,
   onSelect,
   onStatusUpdate,
 }: {
@@ -405,6 +406,7 @@ function AutonomousAgent3D({
   isSelected: boolean;
   isBackendWorking: boolean;
   isTargetInvolved: boolean;
+  hasUnread: boolean;
   onSelect: (agent: Agent) => void;
   onStatusUpdate: (id: string, text: string) => void;
 }) {
@@ -423,7 +425,7 @@ function AutonomousAgent3D({
   useEffect(() => {
     if (isBackendWorking || isTargetInvolved) {
       setWaypointQueue([
-        { x: 0, y: 0, z: -5.0, name: "Ruang CEO (Rapat Lintas Divisi) 🏃‍♂️" },
+        { x: 0, y: 0, z: -5.0, name: "Ruang CEO (Rapat Lintas Divisi) 🏃‍♂️️" },
         { x: homeX, y: 0, z: chairZ, name: "Kembali Eksekusi Tugas 💼" }
       ]);
       setEmote("🏃‍♂️ BERKOORDINASI...");
@@ -506,6 +508,11 @@ function AutonomousAgent3D({
         >
           <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }}></span>
           <span>{agent.name}</span>
+          {hasUnread && (
+            <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold animate-bounce ml-0.5">
+              📩 New
+            </span>
+          )}
         </div>
       </Html>
     </group>
@@ -550,7 +557,12 @@ export default function OfficeCanvas() {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [involvedAgentIds, setInvolvedAgentIds] = useState<string[]>([]);
+  const [unreadAgentIds, setUnreadAgentIds] = useState<string[]>([]);
   const [activityLogs, setActivityLogs] = useState<{ id: string; text: string; time: string }[]>([]);
+
+  // State Modal CEO Briefing Form Eksplisit
+  const [isCeoModalOpen, setIsCeoModalOpen] = useState(false);
+  const [ceoBriefInput, setCeoBriefInput] = useState("");
 
   useEffect(() => {
     fetch("https://office-ai-backend.vercel.app/agents")
@@ -612,6 +624,9 @@ export default function OfficeCanvas() {
     setSelectedAgent(agent);
     setActiveTab("pribadi");
 
+    // Bersihkan unread badge untuk agen ini
+    setUnreadAgentIds((prev) => prev.filter((id) => id !== agent.id));
+
     if (messagesByAgent[agent.id]) {
       setMessages(messagesByAgent[agent.id]);
     } else {
@@ -663,6 +678,7 @@ export default function OfficeCanvas() {
 
       if (data.involved_ids && Array.isArray(data.involved_ids)) {
         setInvolvedAgentIds(data.involved_ids);
+        setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids])));
         setTimeout(() => setInvolvedAgentIds([]), 14000);
       }
 
@@ -687,9 +703,45 @@ export default function OfficeCanvas() {
         }));
 
         setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
+        setUnreadAgentIds((prev) => Array.from(new Set([...prev, "uiux-1", "design-3d", "fe-dev-1"])));
         setTimeout(() => setInvolvedAgentIds([]), 14000);
         setLoading(false);
       }, 700);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendCeoBriefModal = async () => {
+    if (!ceoBriefInput.trim()) return;
+    const briefText = ceoBriefInput;
+    setCeoBriefInput("");
+    setIsCeoModalOpen(false);
+    setLoading(true);
+
+    // Cari agen CEO
+    const ceoAgent = agents.find((a) => a.id === "ceo-main") || agents[0];
+    setSelectedAgent(ceoAgent);
+
+    try {
+      const res = await fetch("https://office-ai-backend.vercel.app/chat/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_id: "ceo-main", message: briefText }),
+      });
+      const data = await res.json();
+      
+      if (data.involved_ids && Array.isArray(data.involved_ids)) {
+        setInvolvedAgentIds(data.involved_ids);
+        setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids])));
+        setTimeout(() => setInvolvedAgentIds([]), 14000);
+      }
+
+      handleSelectAgent(ceoAgent);
+    } catch {
+      setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
+      setUnreadAgentIds(["uiux-1", "design-3d", "fe-dev-1"]);
+      setTimeout(() => setInvolvedAgentIds([]), 14000);
     } finally {
       setLoading(false);
     }
@@ -702,6 +754,7 @@ export default function OfficeCanvas() {
 
   return (
     <div className="relative w-screen h-screen bg-slate-900 overflow-hidden font-sans select-none">
+      {/* HEADER & BUTTON BRIEFING CEO */}
       <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur border border-slate-200 text-slate-800 p-3.5 rounded-2xl shadow-lg flex items-center gap-4">
         <div>
           <h1 className="font-bold text-sm tracking-wide flex items-center gap-2 text-indigo-900">
@@ -709,8 +762,55 @@ export default function OfficeCanvas() {
           </h1>
           <p className="text-xs text-slate-500">36 AI Agents spread across 7 Division Suites in Ground Floor</p>
         </div>
+        <button
+          onClick={() => setIsCeoModalOpen(true)}
+          className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5"
+        >
+          <span>📢</span> Kirim Briefing CEO
+        </button>
       </div>
 
+      {/* MODAL FORM BRIEFING CEO EKSPLISIT */}
+      {isCeoModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-bold text-base text-rose-900 flex items-center gap-2">
+                <span>📢</span> Instruksi Briefing Strategis CEO (Pak Pakar)
+              </h3>
+              <button onClick={() => setIsCeoModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-sm font-bold">
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Kirimkan instruksi/arahan makro perusahaan kepada Pak Pakar (CEO). Beliau akan membedah instruksi ini dan mengoordinasikannya secara otomatis ke manajer & spesialis divisi terkait.
+            </p>
+            <textarea
+              rows={4}
+              value={ceoBriefInput}
+              onChange={(e) => setCeoBriefInput(e.target.value)}
+              placeholder="Contoh: Pak Pakar, perusahaan mau meluncurkan pembaruan aplikasi mobile. Tolong kumpulkan divisi Product dan Technology untuk buat rencana kerja..."
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:border-rose-500 text-slate-800"
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsCeoModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSendCeoBriefModal}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow"
+              >
+                Eksekusi Briefing 🚀
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIVE ACTIVITY LOGS */}
       <div className="absolute bottom-4 left-4 z-10 w-80 max-h-48 bg-white/85 backdrop-blur border border-slate-200 text-slate-800 p-3 rounded-2xl shadow-lg overflow-hidden pointer-events-none">
         <h3 className="text-[11px] font-bold text-indigo-600 mb-2 flex items-center gap-1">
           <span>📡</span> LIVE AGENT ACTIVITIES
@@ -747,6 +847,7 @@ export default function OfficeCanvas() {
             isSelected={selectedAgent?.id === agent.id}
             isBackendWorking={loading && selectedAgent?.id === agent.id}
             isTargetInvolved={involvedAgentIds.includes(agent.id)}
+            hasUnread={unreadAgentIds.includes(agent.id)}
             onSelect={handleSelectAgent}
             onStatusUpdate={handleStatusUpdate}
           />
@@ -755,6 +856,7 @@ export default function OfficeCanvas() {
         <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.05} minDistance={5} maxDistance={40} />
       </Canvas>
 
+      {/* SIDEBAR PANEL CHAT */}
       {selectedAgent && (
         <div className="absolute top-0 right-0 w-96 h-full bg-white/95 border-l border-slate-200 backdrop-blur text-slate-800 flex flex-col z-20 shadow-2xl">
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
@@ -826,7 +928,6 @@ export default function OfficeCanvas() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col justify-between p-4 overflow-hidden">
-              {/* TAMPILAN PERCAKAPAN 2 ARAH (DAPAT MEMBEDAKAN PESAN USER, CEO, ATAU KARYAWAN) */}
               <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-1 mb-3">
                 {messages.length === 0 && (
                   <div className="text-slate-400 text-center mt-12 space-y-1">
