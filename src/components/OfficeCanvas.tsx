@@ -24,7 +24,6 @@ interface Waypoint {
   name: string;
 }
 
-// Warna Divisi Utama
 const DIVISION_COLORS: Record<string, string> = {
   Executive: "#e11d48",
   Technology: "#2563eb",
@@ -35,7 +34,6 @@ const DIVISION_COLORS: Record<string, string> = {
   "HR & Operations": "#0d9488",
 };
 
-// Generator Penampilan Karakter
 function getAgentAppearance(agent: Agent) {
   let hash = 0;
   for (let i = 0; i < agent.id.length; i++) {
@@ -69,11 +67,9 @@ function getAgentAppearance(agent: Agent) {
   };
 }
 
-// LOGIKA RESPONS CERDAS & EXECUTIVE BRIEFING DISESUAIKAN
 function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: Agent[]): string {
   const lowerMsg = userMsg.toLowerCase();
 
-  // 1. DETEKSI PERINTAH BRIEFING / DELEGASI TUGAS LINTAS DIVISI (PRIORITAS UTAMA)
   const isBriefingQuery =
     lowerMsg.includes("briefing") ||
     lowerMsg.includes("semua divisi") ||
@@ -110,7 +106,6 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: 
     }
   }
 
-  // 2. DETEKSI PERTANYAAN SEPUTAR PIMPINAN / STRUKTUR (DENGAN PHRASE SPESIFIK)
   const isAskingForBoss =
     lowerMsg.includes("siapa pimpinan") ||
     lowerMsg.includes("siapa bos") ||
@@ -133,7 +128,6 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: 
     return `Atasan langsung saya di divisi ${agent.division} adalah ${divisionManager ? divisionManager.name : "Manager tim"}, dan pimpinan tertinggi perusahaan adalah ${ceo ? ceo.name : "Pak Pakar (CEO)"}.`;
   }
 
-  // 3. RESPONS FORMALITAS BISNIS
   const formalKeywords = [
     "laporan", "strategi", "analisis", "dokumen", "evaluasi", "proyeksi",
     "rekomendasi", "prosedur", "anggaran", "sop", "kontrak", "arsitektur",
@@ -143,7 +137,6 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: 
     return `Yth. Bapak/Ibu,\n\nMenindaklanjuti permohonan Anda mengenai "${userMsg}", hal ini telah dicatat dalam agenda prioritas Divisi ${agent.division}.\n\nHormat kami,\n${agent.name}\n${agent.role} - Divisi ${agent.division}`;
   }
 
-  // 4. PERTANYAAN TIM / KEAHLIAN / SAPAAN
   if (lowerMsg.includes("teman") || lowerMsg.includes("tim") || lowerMsg.includes("anggota")) {
     const team = allAgents.filter((a) => a.division === agent.division && a.id !== agent.id);
     return `Di divisi ${agent.division}, saya bekerjasama dengan ${team.map((a) => a.name).join(", ")}.`;
@@ -156,7 +149,6 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: 
   return `Mengenai "${userMsg}", poin tersebut telah saya pahami dan akan ditindaklanjuti oleh tim ${agent.division}.`;
 }
 
-// Navigasi Waypoints Kantor
 const WORKSPACES: Record<string, Waypoint> = {
   CANTEEN_TABLE_1_A: { x: -7.5, y: 0, z: 7.5, name: "Kantin Meja 1 (A) 🍽️" },
   CANTEEN_TABLE_1_B: { x: -6.0, y: 0, z: 7.5, name: "Kantin Meja 1 (B) 🍽️" },
@@ -405,12 +397,14 @@ function AutonomousAgent3D({
   agent,
   isSelected,
   isBackendWorking,
+  isTargetInvolved,
   onSelect,
   onStatusUpdate,
 }: {
   agent: Agent;
   isSelected: boolean;
   isBackendWorking: boolean;
+  isTargetInvolved: boolean;
   onSelect: (agent: Agent) => void;
   onStatusUpdate: (id: string, text: string) => void;
 }) {
@@ -426,18 +420,23 @@ function AutonomousAgent3D({
 
   const color = DIVISION_COLORS[agent.division] || "#64748b";
 
+  // EFEK KOORDINASI BERJALAN SAAT DELEGASI TERJADI
+  useEffect(() => {
+    if (isBackendWorking || isTargetInvolved) {
+      setWaypointQueue([
+        { x: 0, y: 0, z: -5.0, name: "Ruang CEO (Rapat Lintas Divisi) 🏃‍♂️" },
+        { x: homeX, y: 0, z: chairZ, name: "Kembali Eksekusi Tugas 💼" }
+      ]);
+      setEmote("🏃‍♂️ BERKOORDINASI...");
+      onStatusUpdate(agent.id, `${agent.name} sedang berjalan menuju Executive Suite untuk berkoordinasi...`);
+    }
+  }, [isBackendWorking, isTargetInvolved, homeX, chairZ, agent.id, agent.name]);
+
   useEffect(() => {
     const interval = setInterval(() => {
-      if (isBackendWorking) {
-        setWaypointQueue([{ x: homeX, y: 0, z: chairZ, name: "Meja Kerja 💼" }]);
-        setAnimState("TYPING");
-        setEmote("⚡ THINKING...");
-        setRotationY(Math.PI);
-        onStatusUpdate(agent.id, `${agent.name} sedang memproses instruksi AI...`);
-        return;
-      }
+      if (isBackendWorking || isTargetInvolved) return;
 
-      if (Math.random() < 0.4) {
+      if (Math.random() < 0.35) {
         const destinationOptions = [
           { dest: WORKSPACES.CANTEEN_TABLE_1_A, state: "EATING" as const, emote: "🍕 Makan Pizza", msg: "makan pizza di Kantin" },
           { dest: WORKSPACES.CANTEEN_TABLE_1_B, state: "CHATTING" as const, emote: "💬 Ngobrol Kantin", msg: "ngobrol santai di Kantin" },
@@ -454,12 +453,12 @@ function AutonomousAgent3D({
           setWaypointQueue([{ x: homeX, y: 0, z: chairZ, name: "Meja Kerja 💼" }]);
           setEmote(undefined);
           onStatusUpdate(agent.id, `${agent.name} kembali ke meja kerja`);
-        }, 10000);
+        }, 9000);
       }
     }, 12000 + Math.random() * 5000);
 
     return () => clearInterval(interval);
-  }, [isBackendWorking, homeX, homeZ, chairZ, agent.id, agent.name]);
+  }, [isBackendWorking, isTargetInvolved, homeX, chairZ, agent.id, agent.name]);
 
   useFrame((_, delta) => {
     if (waypointQueue.length === 0) return;
@@ -469,8 +468,8 @@ function AutonomousAgent3D({
     const dz = target.z - currentPos.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
 
-    if (dist > 0.12) {
-      const speed = 2.5 * delta;
+    if (dist > 0.15) {
+      const speed = 3.0 * delta;
       const nx = currentPos.x + (dx / dist) * Math.min(speed, dist);
       const nz = currentPos.z + (dz / dist) * Math.min(speed, dist);
 
@@ -480,12 +479,11 @@ function AutonomousAgent3D({
     } else {
       setWaypointQueue((prev) => prev.slice(1));
       if (waypointQueue.length === 1) {
-        if (target.x === homeX && target.z === chairZ) {
-          setAnimState("TYPING");
-          setRotationY(Math.PI);
-        } else {
-          setAnimState("SITTING");
-        }
+        setAnimState("SITTING");
+        setEmote("💬 BERDISKUSI...");
+      } else if (waypointQueue.length === 0) {
+        setAnimState("TYPING");
+        setEmote(undefined);
       }
     }
   });
@@ -500,8 +498,8 @@ function AutonomousAgent3D({
         <div
           onClick={() => onSelect(agent)}
           className={`cursor-pointer text-slate-800 text-[10px] px-2.5 py-0.5 rounded-full shadow-md border whitespace-nowrap transition flex items-center gap-1 select-none ${
-            isBackendWorking
-              ? "bg-amber-100 border-amber-500 animate-pulse font-bold"
+            isBackendWorking || isTargetInvolved
+              ? "bg-amber-100 border-amber-500 animate-pulse font-bold scale-110"
               : isSelected
               ? "bg-indigo-600 text-white border-white scale-110 font-bold"
               : "bg-white/90 border-slate-300 hover:scale-105 font-medium"
@@ -551,6 +549,7 @@ export default function OfficeCanvas() {
   const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [involvedAgentIds, setInvolvedAgentIds] = useState<string[]>([]);
   const [activityLogs, setActivityLogs] = useState<{ id: string; text: string; time: string }[]>([]);
 
   useEffect(() => {
@@ -620,7 +619,7 @@ export default function OfficeCanvas() {
       if (data.messages && data.messages.length > 0) {
         setMessages(
           data.messages.map((m: { sender: string; text: string }) => ({
-            sender: m.sender === "user" ? "You" : agent.name,
+            sender: m.sender === "user" || m.sender === "You" ? "You" : m.sender,
             text: m.text,
           }))
         );
@@ -646,6 +645,11 @@ export default function OfficeCanvas() {
       const data = await res.json();
       const replyText = Array.isArray(data.response) ? data.response[0]?.text : data.response;
 
+      if (data.involved_ids && Array.isArray(data.involved_ids)) {
+        setInvolvedAgentIds(data.involved_ids);
+        setTimeout(() => setInvolvedAgentIds([]), 14000);
+      }
+
       if (replyText) {
         setMessages((prev) => [...prev, { sender: selectedAgent.name, text: replyText }]);
       } else {
@@ -656,6 +660,8 @@ export default function OfficeCanvas() {
       setTimeout(() => {
         const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg, agents);
         setMessages((prev) => [...prev, { sender: selectedAgent.name, text: naturalReply }]);
+        setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
+        setTimeout(() => setInvolvedAgentIds([]), 14000);
         setLoading(false);
       }, 700);
     } finally {
@@ -714,6 +720,7 @@ export default function OfficeCanvas() {
             agent={agent}
             isSelected={selectedAgent?.id === agent.id}
             isBackendWorking={loading && selectedAgent?.id === agent.id}
+            isTargetInvolved={involvedAgentIds.includes(agent.id)}
             onSelect={handleSelectAgent}
             onStatusUpdate={handleStatusUpdate}
           />
