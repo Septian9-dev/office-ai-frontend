@@ -17,13 +17,6 @@ interface Agent {
   status: string;
 }
 
-interface Waypoint {
-  x: number;
-  y: number;
-  z: number;
-  name: string;
-}
-
 const DIVISION_COLORS: Record<string, string> = {
   Executive: "#e11d48",
   Technology: "#2563eb",
@@ -67,16 +60,9 @@ function getAgentAppearance(agent: Agent) {
   };
 }
 
-function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: Agent[]): string {
+function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
   return `Mengenai "${userMsg}", poin tersebut telah saya pahami dan sedang diproses oleh tim ${agent.division}.`;
 }
-
-const WORKSPACES: Record<string, Waypoint> = {
-  CANTEEN_TABLE_1_A: { x: -7.5, y: 0, z: 7.5, name: "Kantin Meja 1 (A) 🍽️" },
-  CANTEEN_TABLE_1_B: { x: -6.0, y: 0, z: 7.5, name: "Kantin Meja 1 (B) 🍽️" },
-  COFFEE_COUNTER: { x: -11.0, y: 0, z: 8.5, name: "Barista Coffee Counter ☕" },
-  LOUNGE_AREA: { x: 8.5, y: 0, z: 8.5, name: "Lounge Santai 🛋️" },
-};
 
 function EnclosedDivisionRoom({
   title,
@@ -178,11 +164,9 @@ function AllDivisionRooms() {
 
 function DiverseSimsCharacter({
   agent,
-  state,
   emote,
 }: {
   agent: Agent;
-  state: "WALKING" | "TYPING" | "SITTING" | "STANDING" | "EATING" | "DRINKING" | "CHATTING";
   emote?: string;
 }) {
   const traits = useMemo(() => getAgentAppearance(agent), [agent]);
@@ -200,35 +184,16 @@ function DiverseSimsCharacter({
   useFrame((threeState) => {
     const t = threeState.clock.getElapsedTime();
 
-    if (state === "WALKING") {
-      const legCycle = Math.sin(t * 9);
-      if (leftLegRef.current) leftLegRef.current.rotation.x = legCycle * 0.55;
-      if (rightLegRef.current) rightLegRef.current.rotation.x = -legCycle * 0.55;
-      if (leftArmRef.current) leftArmRef.current.rotation.x = -legCycle * 0.45;
-      if (rightArmRef.current) rightArmRef.current.rotation.x = legCycle * 0.45;
-      if (bodyRef.current) bodyRef.current.position.y = 0.48 + Math.abs(Math.sin(t * 18)) * 0.04;
-    } else if (state === "TYPING" || state === "SITTING") {
-      if (leftLegRef.current) leftLegRef.current.rotation.x = -Math.PI / 2;
-      if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.PI / 2;
-      if (state === "TYPING") {
-        if (leftArmRef.current) leftArmRef.current.rotation.x = -1.1 + Math.sin(t * 18) * 0.06;
-        if (rightArmRef.current) rightArmRef.current.rotation.x = -1.1 + Math.cos(t * 18) * 0.06;
-      } else {
-        if (leftArmRef.current) leftArmRef.current.rotation.x = -0.6;
-        if (rightArmRef.current) rightArmRef.current.rotation.x = -0.6;
-      }
-      if (bodyRef.current) bodyRef.current.position.y = 0.22;
-    } else {
-      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
-      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
-      if (leftArmRef.current) leftArmRef.current.rotation.x = -0.1;
-      if (rightArmRef.current) rightArmRef.current.rotation.x = -0.1;
-      if (bodyRef.current) bodyRef.current.position.y = 0.48 + Math.sin(t * 2) * 0.015;
-    }
+    // Animasi Duduk & Mengetik di Meja Kerja
+    if (leftLegRef.current) leftLegRef.current.rotation.x = -Math.PI / 2;
+    if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.PI / 2;
+    if (leftArmRef.current) leftArmRef.current.rotation.x = -1.1 + Math.sin(t * 12) * 0.05;
+    if (rightArmRef.current) rightArmRef.current.rotation.x = -1.1 + Math.cos(t * 12) * 0.05;
+    if (bodyRef.current) bodyRef.current.position.y = 0.22 + Math.sin(t * 2) * 0.005;
   });
 
   return (
-    <group ref={bodyRef} position={[0, 0.48, 0]}>
+    <group ref={bodyRef} position={[0, 0.22, 0]}>
       {emote && (
         <Float speed={3} rotationIntensity={0.2} floatIntensity={0.5}>
           <Html position={[0, 1.5, 0]} center>
@@ -332,85 +297,22 @@ function AutonomousAgent3D({
   const homeZ = agent.position_z;
   const chairZ = homeZ + 0.25;
 
-  const [currentPos, setCurrentPos] = useState({ x: homeX, y: 0, z: chairZ });
-  const [waypointQueue, setWaypointQueue] = useState<Waypoint[]>([]);
-  const [animState, setAnimState] = useState<"WALKING" | "TYPING" | "SITTING" | "STANDING" | "EATING" | "DRINKING" | "CHATTING">("TYPING");
   const [emote, setEmote] = useState<string | undefined>(undefined);
-  const [rotationY, setRotationY] = useState(Math.PI);
-
   const color = DIVISION_COLORS[agent.division] || "#64748b";
 
   useEffect(() => {
     if (isBackendWorking || isTargetInvolved) {
-      setWaypointQueue([
-        { x: 0, y: 0, z: -5.0, name: "Ruang CEO (Rapat Lintas Divisi) 🏃‍♂️" },
-        { x: homeX, y: 0, z: chairZ, name: "Kembali Eksekusi Tugas 💼" }
-      ]);
-      setEmote("🏃‍♂️ BERKOORDINASI...");
-      onStatusUpdate(agent.id, `${agent.name} sedang berjalan menuju Executive Suite untuk berkoordinasi...`);
-    }
-  }, [isBackendWorking, isTargetInvolved, homeX, chairZ, agent.id, agent.name]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (isBackendWorking || isTargetInvolved) return;
-
-      if (Math.random() < 0.35) {
-        const destinationOptions = [
-          { dest: WORKSPACES.CANTEEN_TABLE_1_A, state: "EATING" as const, emote: "🍕 Makan Pizza", msg: "makan pizza di Kantin" },
-          { dest: WORKSPACES.CANTEEN_TABLE_1_B, state: "CHATTING" as const, emote: "💬 Ngobrol Kantin", msg: "ngobrol santai di Kantin" },
-          { dest: WORKSPACES.COFFEE_COUNTER, state: "STANDING" as const, emote: "☕ Pesan Kopi", msg: "memesan kopi di Barista Counter" },
-          { dest: WORKSPACES.LOUNGE_AREA, state: "CHATTING" as const, emote: "🛋 Relax Lounge", msg: "bersantai di Lounge" },
-        ];
-
-        const chosen = destinationOptions[Math.floor(Math.random() * destinationOptions.length)];
-        setWaypointQueue([chosen.dest]);
-        setEmote(chosen.emote);
-        onStatusUpdate(agent.id, `${agent.name} ${chosen.msg}`);
-
-        setTimeout(() => {
-          setWaypointQueue([{ x: homeX, y: 0, z: chairZ, name: "Meja Kerja 💼" }]);
-          setEmote(undefined);
-          onStatusUpdate(agent.id, `${agent.name} kembali ke meja kerja`);
-        }, 9000);
-      }
-    }, 12000 + Math.random() * 5000);
-
-    return () => clearInterval(interval);
-  }, [isBackendWorking, isTargetInvolved, homeX, chairZ, agent.id, agent.name]);
-
-  useFrame((_, delta) => {
-    if (waypointQueue.length === 0) return;
-
-    const target = waypointQueue[0];
-    const dx = target.x - currentPos.x;
-    const dz = target.z - currentPos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-
-    if (dist > 0.15) {
-      const speed = 3.0 * delta;
-      const nx = currentPos.x + (dx / dist) * Math.min(speed, dist);
-      const nz = currentPos.z + (dz / dist) * Math.min(speed, dist);
-
-      setCurrentPos({ x: nx, y: 0, z: nz });
-      setRotationY(Math.atan2(dx, dz));
-      setAnimState("WALKING");
+      setEmote("💬 MEMPROSES TUGAS...");
+      onStatusUpdate(agent.id, `${agent.name} sedang memproses tugas di meja kerja...`);
     } else {
-      setWaypointQueue((prev) => prev.slice(1));
-      if (waypointQueue.length === 1) {
-        setAnimState("SITTING");
-        setEmote("💬 BERDISKUSI...");
-      } else if (waypointQueue.length === 0) {
-        setAnimState("TYPING");
-        setEmote(undefined);
-      }
+      setEmote(undefined);
     }
-  });
+  }, [isBackendWorking, isTargetInvolved, agent.id, agent.name]);
 
   return (
-    <group position={[currentPos.x, currentPos.y, currentPos.z]} rotation={[0, rotationY, 0]}>
+    <group position={[homeX, 0, chairZ]} rotation={[0, Math.PI, 0]}>
       <group onClick={(e) => { e.stopPropagation(); onSelect(agent); }} scale={isSelected ? 1.15 : 1.0}>
-        <DiverseSimsCharacter agent={agent} state={animState} emote={emote} />
+        <DiverseSimsCharacter agent={agent} emote={emote} />
       </group>
 
       <Html position={[0, 1.7, 0]} center>
@@ -543,7 +445,6 @@ export default function OfficeCanvas() {
 
     setUnreadAgentIds((prev) => prev.filter((id) => id !== agent.id));
 
-    // MENGAMBIL PESAN DARI DATABASE SUPABASE UNTUK MEMASTIKAN HASIL MENDALAM BACKGROUND TASK TERAMBIL
     try {
       const res = await fetch(`https://office-ai-backend.vercel.app/messages/${agent.id}`);
       const data = await res.json();
@@ -596,7 +497,7 @@ export default function OfficeCanvas() {
       }
 
       const replySender = replyText ? (data.agent_name || selectedAgent.name) : selectedAgent.name;
-      const finalReplyText = replyText || generateNaturalHumanResponse(selectedAgent, userMsg, agents);
+      const finalReplyText = replyText || generateNaturalHumanResponse(selectedAgent, userMsg);
       const replyMsgObj = { sender: replySender, text: finalReplyText };
 
       setMessages((prev) => [...prev, replyMsgObj]);
@@ -606,7 +507,7 @@ export default function OfficeCanvas() {
       }));
     } catch {
       setTimeout(() => {
-        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg, agents);
+        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg);
         const fallbackObj = { sender: selectedAgent.name, text: naturalReply };
 
         setMessages((prev) => [...prev, fallbackObj]);
