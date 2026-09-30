@@ -60,10 +60,30 @@ function getAgentAppearance(agent: Agent) {
   };
 }
 
-// RESPON FALLBACK BERDASARKAN PERSONA DAN PERAN
+// PERBAIKAN FUNGSI FALLBACK RESPON MANUSIAWI
 function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
   const lowerMsg = userMsg.toLowerCase().trim();
 
+  // 1. Respon kontekstual jika ditanya kesibukan atau aktivitas harian
+  if (
+    lowerMsg.includes("sibuk") ||
+    lowerMsg.includes("lagi apa") ||
+    lowerMsg.includes("kegiatan") ||
+    lowerMsg.includes("ngapain")
+  ) {
+    if (agent.id === "design-3d" || agent.name.includes("Raka")) {
+      return "Lagi fokus optimasi aset 3D sama benerin lighting render-an nih. Ada visual yang mau disiapin?";
+    }
+    if (agent.id === "content-writer" || agent.name.includes("Rina")) {
+      return "Lagi nyusun draf copywriting buat campaign baru nih. Kenapa tuh?";
+    }
+    if (agent.role === "CEO" || agent.id === "ceo-main") {
+      return "Lagi review OKR divisi sama koordinasi strategi minggu ini. Ada hal penting yang mau dibahas?";
+    }
+    return `Lagi nyelesaiin beberapa task operasional di divisi ${agent.division} nih. Ada yang bisa dibantu?`;
+  }
+
+  // 2. Respon sapaan atau tawaran bantuan
   const isGreetingOrHelp =
     lowerMsg.includes("bantu") ||
     lowerMsg.includes("bisa kamu") ||
@@ -76,16 +96,17 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
 
   if (isGreetingOrHelp) {
     if (agent.role === "CEO" || agent.id === "ceo-main") {
-      return "Bisa banget! Mau minta tolong apa nih? Kirim aja detail atau briefing-nya, nanti gue bantu koordinasiin ke tim.";
+      return "Bisa banget! Minta tolong apa nih? Sampaikan aja detailnya, nanti dikoordinasiin ke tim.";
     }
-    return `Bisa dong! Ada yang bisa gue bantu terkait tugas divisi ${agent.division}?`;
+    return `Bisa dong! Ada yang bisa gue bantu terkait pekerjaan di divisi ${agent.division}?`;
   }
 
+  // 3. Fallback umum tanpa mengulang template kaku
   if (agent.role === "CEO" || agent.id === "ceo-main") {
-    return `Sip, instruksi tentang "${userMsg}" udah gue catat. Ada arahan spesifik lagi yang mau ditambahin ke tim?`;
+    return "Sip, poin itu udah gue catat. Ada hal spesifik lain yang mau dibahas?";
   }
 
-  return `Okee sip! Terkait "${userMsg}", lagi dikoordinasiin dan disiapin sama tim yaa.`;
+  return "Aman, lagi diproses nih! Nanti langsung dikoordinasiin begitu ada perkembangan terbaru ya.";
 }
 
 function EnclosedDivisionRoom({
