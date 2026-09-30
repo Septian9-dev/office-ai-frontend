@@ -99,13 +99,12 @@ class ElevatorController {
   passengers: string[] = [];
   queueL1: string[] = [];
   queueL2: string[] = [];
-  doorOpenProgress = 0; // 0 = tertutup rapat, 1 = terbuka penuh
+  doorOpenProgress = 0;
 
   update(delta: number) {
     const distance = Math.abs(this.currentY - this.targetY);
 
     if (distance > 0.05) {
-      // Tutup pintu saat lift bergerak
       this.doorOpenProgress = Math.max(0, this.doorOpenProgress - delta * 4);
       if (this.doorOpenProgress < 0.1) {
         const step = Math.sign(this.targetY - this.currentY) * 2.2 * delta;
@@ -113,10 +112,8 @@ class ElevatorController {
       }
     } else {
       this.currentY = this.targetY;
-      // Buka pintu saat lift sampai di lokasi tujuan
       this.doorOpenProgress = Math.min(1, this.doorOpenProgress + delta * 3);
 
-      // Penjemputan otomatis jika tidak ada penumpang
       if (this.passengers.length === 0) {
         if (this.queueL1.length > 0 && Math.abs(this.currentY - 0) > 0.1) {
           this.targetY = 0;
@@ -181,7 +178,258 @@ class ElevatorController {
 const globalElevator = new ElevatorController();
 
 // ==========================================
-// 1. KARAKTER 3D DENGAN MATERIAL BERTEKSTUR
+// 1. KOMPONEN RUANGAN DIVISI KHUSUS
+// ==========================================
+function EnclosedDivisionRoom({
+  title,
+  icon,
+  color,
+  position,
+  size,
+  doorSide = "front",
+  children,
+}: {
+  title: string;
+  icon: string;
+  color: string;
+  position: [number, number, number];
+  size: [number, number]; // [width, depth]
+  doorSide?: "front" | "back" | "left" | "right";
+  children?: React.ReactNode;
+}) {
+  const [w, d] = size;
+  const h = 2.2; // Tinggi Dinding Kaca
+  const wallThickness = 0.06;
+  const doorWidth = 1.6;
+
+  return (
+    <group position={position}>
+      {/* Ubin Karpet Divisi */}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[w, d]} />
+        <meshStandardMaterial color={color} transparent opacity={0.22} roughness={0.8} />
+      </mesh>
+      {/* Border Ring Karpet */}
+      <mesh position={[0, 0.018, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[w / 2 - 0.1, w / 2, 4]} />
+        <meshBasicMaterial color={color} transparent opacity={0.4} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* DINDING BELAKANG */}
+      <mesh position={[0, h / 2, -d / 2]}>
+        <boxGeometry args={[w, h, wallThickness]} />
+        <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} metalness={0.8} />
+      </mesh>
+      <mesh position={[0, h, -d / 2]}>
+        <boxGeometry args={[w + 0.08, 0.08, 0.08]} />
+        <meshStandardMaterial color={color} metalness={0.8} />
+      </mesh>
+
+      {/* DINDING KIRI */}
+      <mesh position={[-w / 2, h / 2, 0]}>
+        <boxGeometry args={[wallThickness, h, d]} />
+        <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} metalness={0.8} />
+      </mesh>
+      <mesh position={[-w / 2, h, 0]}>
+        <boxGeometry args={[0.08, 0.08, d + 0.08]} />
+        <meshStandardMaterial color={color} metalness={0.8} />
+      </mesh>
+
+      {/* DINDING KANAN */}
+      <mesh position={[w / 2, h / 2, 0]}>
+        <boxGeometry args={[wallThickness, h, d]} />
+        <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} metalness={0.8} />
+      </mesh>
+      <mesh position={[w / 2, h, 0]}>
+        <boxGeometry args={[0.08, 0.08, d + 0.08]} />
+        <meshStandardMaterial color={color} metalness={0.8} />
+      </mesh>
+
+      {/* DINDING DEPAN (DENGAN CELAH PINTU MASUK) */}
+      {doorSide === "front" && (
+        <group position={[0, 0, d / 2]}>
+          {/* Panel Kaca Kiri Pintu */}
+          <mesh position={[-(w / 2 + doorWidth / 2) / 2, h / 2, 0]}>
+            <boxGeometry args={[(w - doorWidth) / 2, h, wallThickness]} />
+            <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} />
+          </mesh>
+          {/* Panel Kaca Kanan Pintu */}
+          <mesh position={[(w / 2 + doorWidth / 2) / 2, h / 2, 0]}>
+            <boxGeometry args={[(w - doorWidth) / 2, h, wallThickness]} />
+            <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} />
+          </mesh>
+          {/* Ambang Atas Pintu */}
+          <mesh position={[0, h - 0.2, 0]}>
+            <boxGeometry args={[doorWidth, 0.4, wallThickness]} />
+            <meshStandardMaterial color="#38bdf8" transparent opacity={0.25} />
+          </mesh>
+          <mesh position={[0, h, 0]}>
+            <boxGeometry args={[w + 0.08, 0.08, 0.08]} />
+            <meshStandardMaterial color={color} metalness={0.8} />
+          </mesh>
+
+          {/* Plang Title Signage Ruangan */}
+          <Html position={[0, h + 0.25, 0.05]} center>
+            <div
+              className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-white shadow-xl flex items-center gap-1.5 border border-white/20 select-none whitespace-nowrap"
+              style={{ backgroundColor: color }}
+            >
+              <span>{icon}</span>
+              <span>{title}</span>
+            </div>
+          </Html>
+        </group>
+      )}
+
+      {children}
+    </group>
+  );
+}
+
+// ==========================================
+// 2. SELURUH 7 RUANGAN DIVISI DI 2 LANTAI
+// ==========================================
+function AllDivisionRooms() {
+  return (
+    <group>
+      {/* ================= LANTAI 1 (Y = 0) ================= */}
+
+      {/* 👑 1. Executive Suite (CEO) */}
+      <EnclosedDivisionRoom
+        title="EXECUTIVE CEO SUITE"
+        icon="👑"
+        color="#e11d48"
+        position={[0, 0, -3.0]}
+        size={[7.0, 5.0]}
+      >
+        {/* Set Sofa Lounge VIP CEO */}
+        <group position={[-1.8, 0, 0.8]}>
+          <mesh castShadow position={[0, 0.2, 0]}>
+            <boxGeometry args={[1.4, 0.25, 0.6]} />
+            <meshStandardMaterial color="#1e1b4b" roughness={0.3} />
+          </mesh>
+          <mesh castShadow position={[0, 0.42, -0.25]}>
+            <boxGeometry args={[1.4, 0.4, 0.1]} />
+            <meshStandardMaterial color="#1e1b4b" roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 0.18, 0.6]}>
+            <boxGeometry args={[0.9, 0.04, 0.4]} />
+            <meshStandardMaterial color="#38bdf8" transparent opacity={0.4} />
+          </mesh>
+        </group>
+        {/* Lampu Warm Light CEO */}
+        <pointLight position={[0, 2.1, 0]} color="#fef08a" intensity={2.0} distance={5} />
+      </EnclosedDivisionRoom>
+
+      {/* 💻 2. Technology Division Room */}
+      <EnclosedDivisionRoom
+        title="TECHNOLOGY DIVISION"
+        icon="💻"
+        color="#2563eb"
+        position={[-8.5, 0, -3.0]}
+        size={[8.0, 5.0]}
+      >
+        {/* Server Rack Datacenter Accent */}
+        <group position={[-3.2, 0, -1.8]}>
+          <mesh castShadow position={[0, 0.9, 0]}>
+            <boxGeometry args={[0.6, 1.8, 0.6]} />
+            <meshStandardMaterial color="#020617" roughness={0.2} metalness={0.9} />
+          </mesh>
+          <mesh position={[0, 0.9, 0.31]}>
+            <planeGeometry args={[0.5, 1.6]} />
+            <meshStandardMaterial color="#0284c7" emissive="#38bdf8" emissiveIntensity={0.6} />
+          </mesh>
+        </group>
+      </EnclosedDivisionRoom>
+
+      {/* 🎨 3. Product & Design Suite */}
+      <EnclosedDivisionRoom
+        title="PRODUCT & DESIGN"
+        icon="🎨"
+        color="#9333ea"
+        position={[8.5, 0, -3.0]}
+        size={[8.0, 5.0]}
+      >
+        {/* Papan Color Palette & Canvas Design */}
+        <mesh position={[3.2, 1.2, -1.8]}>
+          <boxGeometry args={[0.05, 1.1, 1.6]} />
+          <meshStandardMaterial color="#a855f7" emissive="#c084fc" emissiveIntensity={0.4} />
+        </mesh>
+      </EnclosedDivisionRoom>
+
+      {/* 📢 4. Marketing Division Room */}
+      <EnclosedDivisionRoom
+        title="MARKETING DIVISION"
+        icon="📢"
+        color="#16a34a"
+        position={[8.5, 0, 3.5]}
+        size={[8.0, 5.0]}
+      >
+        {/* Dashboard Analytics Board */}
+        <mesh position={[0, 1.3, -2.4]}>
+          <boxGeometry args={[1.8, 1.0, 0.05]} />
+          <meshStandardMaterial color="#14532d" emissive="#22c55e" emissiveIntensity={0.5} />
+        </mesh>
+      </EnclosedDivisionRoom>
+
+      {/* ================= LANTAI 2 MEZZANINE (Y = 4.5) ================= */}
+
+      {/* 🚀 5. Sales & BD Division Suite */}
+      <EnclosedDivisionRoom
+        title="SALES & BD DIVISION"
+        icon="🚀"
+        color="#ea580c"
+        position={[-8.5, 4.5, -3.0]}
+        size={[8.0, 5.0]}
+      >
+        {/* Graph Target Revenue Wall */}
+        <mesh position={[0, 1.3, -2.4]}>
+          <boxGeometry args={[2.0, 0.9, 0.05]} />
+          <meshStandardMaterial color="#7c2d12" emissive="#f97316" emissiveIntensity={0.5} />
+        </mesh>
+      </EnclosedDivisionRoom>
+
+      {/* ⚖️ 6. Finance & Legal Suite */}
+      <EnclosedDivisionRoom
+        title="FINANCE & LEGAL"
+        icon="⚖️"
+        color="#ca8a04"
+        position={[0, 4.5, -3.0]}
+        size={[7.0, 5.0]}
+      >
+        {/* Filing Cabinets / Safe Vault Accent */}
+        <mesh castShadow position={[-2.6, 0.6, -1.8]}>
+          <boxGeometry args={[0.7, 1.2, 0.5]} />
+          <meshStandardMaterial color="#451a03" roughness={0.3} metalness={0.7} />
+        </mesh>
+      </EnclosedDivisionRoom>
+
+      {/* 👥 7. HR & Operations Suite */}
+      <EnclosedDivisionRoom
+        title="HR & OPERATIONS"
+        icon="👥"
+        color="#0d9488"
+        position={[8.5, 4.5, -3.0]}
+        size={[8.0, 5.0]}
+      >
+        {/* Interview Corner Plant Decor */}
+        <group position={[3.1, 0, -1.8]}>
+          <mesh castShadow position={[0, 0.3, 0]}>
+            <cylinderGeometry args={[0.25, 0.18, 0.6, 16]} />
+            <meshStandardMaterial color="#78350f" />
+          </mesh>
+          <mesh castShadow position={[0, 0.8, 0]}>
+            <dodecahedronGeometry args={[0.45, 1]} />
+            <meshStandardMaterial color="#15803d" />
+          </mesh>
+        </group>
+      </EnclosedDivisionRoom>
+    </group>
+  );
+}
+
+// ==========================================
+// 3. KARAKTER 3D DENGAN MATERIAL BERTEKSTUR
 // ==========================================
 function DiverseSimsCharacter({
   agent,
@@ -295,7 +543,7 @@ function DiverseSimsCharacter({
       {/* Emote Bubble */}
       {emote && (
         <Float speed={3} rotationIntensity={0.2} floatIntensity={0.5}>
-          <Html position={[0, 1.5, 0]} center precision={1}>
+          <Html position={[0, 1.5, 0]} center>
             <div className="bg-white/95 text-slate-800 border-2 border-indigo-500 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-lg animate-bounce select-none whitespace-nowrap">
               {emote}
             </div>
@@ -491,7 +739,7 @@ function DiverseSimsCharacter({
 }
 
 // ==========================================
-// 2. AREA KANTIN & MEZZANINE LOUNGE
+// 4. AREA KANTIN & MEZZANINE LOUNGE
 // ==========================================
 function CanteenArea() {
   return (
@@ -506,7 +754,6 @@ function CanteenArea() {
           <boxGeometry args={[2.3, 0.06, 0.9]} />
           <meshStandardMaterial color="#d97706" roughness={0.2} />
         </mesh>
-        {/* Mesin Kopi Barista */}
         <mesh castShadow position={[-0.6, 1.15, 0]}>
           <boxGeometry args={[0.5, 0.42, 0.4]} />
           <meshStandardMaterial color="#0284c7" metalness={0.9} roughness={0.1} />
@@ -592,18 +839,16 @@ function CanteenArea() {
 }
 
 // ==========================================
-// 3. MEJA KERJA STATIS DENGAN MONITOR & AKSESORIS
+// 5. MEJA KERJA STATIS DENGAN MONITOR & AKSESORIS
 // ==========================================
 function StaticWorkstationDesk({ color, isWorking }: { color: string; isWorking: boolean }) {
   return (
     <group>
-      {/* Meja Utama */}
       <mesh castShadow receiveShadow position={[0, 0.38, -0.15]}>
         <boxGeometry args={[1.4, 0.06, 0.7]} />
         <meshStandardMaterial color="#fde68a" roughness={0.2} metalness={0.05} />
       </mesh>
 
-      {/* Kaki Meja Metalik */}
       {[-0.65, 0.65].map((x, i) => (
         <mesh key={i} castShadow position={[x, 0.18, -0.15]}>
           <boxGeometry args={[0.06, 0.36, 0.6]} />
@@ -611,7 +856,6 @@ function StaticWorkstationDesk({ color, isWorking }: { color: string; isWorking:
         </mesh>
       ))}
 
-      {/* Monitor Dual Display Realistis */}
       <group position={[0, 0.65, -0.38]}>
         <mesh castShadow position={[-0.28, 0, 0]} rotation={[0, 0.1, 0]}>
           <boxGeometry args={[0.48, 0.28, 0.02]} />
@@ -633,7 +877,6 @@ function StaticWorkstationDesk({ color, isWorking }: { color: string; isWorking:
         </mesh>
       </group>
 
-      {/* Kursi Ergonomis Kantor */}
       <group position={[0, 0, 0.25]}>
         <mesh castShadow position={[0, 0.26, 0]}>
           <boxGeometry args={[0.45, 0.05, 0.45]} />
@@ -649,7 +892,7 @@ function StaticWorkstationDesk({ color, isWorking }: { color: string; isWorking:
 }
 
 // ==========================================
-// 4. TANGGA L-SHAPE ARSITEKTURAL REALISTIS
+// 6. TANGGA L-SHAPE ARSITEKTURAL REALISTIS
 // ==========================================
 function Staircase3D() {
   const flight1Steps = 9;
@@ -657,7 +900,6 @@ function Staircase3D() {
 
   return (
     <group position={[-11, 0, 0]}>
-      {/* Flight 1 */}
       {Array.from({ length: flight1Steps }).map((_, i) => {
         const y = (i + 1) * 0.25;
         const z = 1.0 - i * 0.5;
@@ -669,13 +911,11 @@ function Staircase3D() {
         );
       })}
 
-      {/* Bordes */}
       <mesh receiveShadow position={[0, 2.25, -3.8]}>
         <boxGeometry args={[1.8, 0.12, 1.8]} />
         <meshStandardMaterial color="#cbd5e1" roughness={0.2} />
       </mesh>
 
-      {/* Flight 2 */}
       {Array.from({ length: flight2Steps }).map((_, i) => {
         const x = (i + 1) * 0.4;
         const y = 2.25 + (i + 1) * 0.25;
@@ -687,7 +927,6 @@ function Staircase3D() {
         );
       })}
 
-      {/* Pagar Kaca Tangga */}
       <mesh position={[-0.75, 1.2, -1.2]} rotation={[0.46, 0, 0]}>
         <boxGeometry args={[0.04, 0.8, 4.2]} />
         <meshStandardMaterial color="#38bdf8" transparent opacity={0.3} roughness={0.1} />
@@ -701,7 +940,7 @@ function Staircase3D() {
 }
 
 // ==========================================
-// 5. LIFT KACA DENGAN PINTU OTOMATIS & INDIKATOR DYNAMIC
+// 7. LIFT KACA DENGAN PINTU OTOMATIS & INDIKATOR DYNAMIC
 // ==========================================
 function GlassElevator3D() {
   const [cabinY, setCabinY] = useState(0);
@@ -713,11 +952,10 @@ function GlassElevator3D() {
     setDoorProgress(globalElevator.doorOpenProgress);
   });
 
-  const doorOffset = doorProgress * 0.55; // Pintu bergeser ke kiri dan kanan
+  const doorOffset = doorProgress * 0.55;
 
   return (
     <group position={[11, 0, 1]}>
-      {/* 4 Pilar Utama Baja */}
       {[
         [-1.0, -1.0],
         [1.0, -1.0],
@@ -730,34 +968,29 @@ function GlassElevator3D() {
         </mesh>
       ))}
 
-      {/* Shaft Lift Kaca Transparan */}
       <mesh position={[0, 4.25, 0]}>
         <boxGeometry args={[2.1, 9.5, 2.1]} />
         <meshStandardMaterial color="#0284c7" transparent opacity={0.15} roughness={0.05} />
       </mesh>
 
-      {/* Machine Room Atap */}
       <mesh position={[0, 9.1, 0]}>
         <boxGeometry args={[2.3, 0.4, 2.3]} />
         <meshStandardMaterial color="#0f172a" metalness={0.8} />
       </mesh>
 
-      {/* Bingkai Pintu Kaca Otomatis di Lantai 1 & Lantai 2 */}
       {[0, 4.5].map((fy, i) => {
         const isCurrentFloor = Math.abs(cabinY - fy) < 0.2;
         const arrowDirection = globalElevator.targetY > cabinY ? "▲" : globalElevator.targetY < cabinY ? "▼" : "●";
 
         return (
           <group key={i} position={[0, fy + 1.1, 1.05]}>
-            {/* Indikator Angka Digital */}
-            <Html position={[0, 1.25, 0.08]} center precision={1}>
+            <Html position={[0, 1.25, 0.08]} center>
               <div className="bg-slate-900 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded border border-amber-500/50 shadow flex items-center gap-1">
                 <span>{arrowDirection}</span>
                 <span>{i === 0 ? "L1" : "L2"}</span>
               </div>
             </Html>
 
-            {/* Pintu Kaca Geser Luar (Left & Right) */}
             {isCurrentFloor && (
               <>
                 <mesh position={[-0.35 - doorOffset, 0, 0]}>
@@ -774,7 +1007,6 @@ function GlassElevator3D() {
         );
       })}
 
-      {/* Kabin Lift Bergerak */}
       <group position={[0, cabinY + 0.9, 0]}>
         <mesh castShadow>
           <boxGeometry args={[1.8, 2.0, 1.8]} />
@@ -791,7 +1023,7 @@ function GlassElevator3D() {
 }
 
 // ==========================================
-// 6. NAVIGASI AGEN OTONOM
+// 8. NAVIGASI AGEN OTONOM
 // ==========================================
 function AutonomousAgent3D({
   agent,
@@ -838,7 +1070,7 @@ function AutonomousAgent3D({
           { dest: WORKSPACES.CANTEEN_TABLE_1_B, state: "CHATTING" as const, emote: "💬 Ngobrol Kantin", msg: "ngobrol santai di Kantin" },
           { dest: WORKSPACES.CANTEEN_TABLE_2_A, state: "DRINKING" as const, emote: "☕ Ngopi Bareng", msg: "minum kopi di Kantin" },
           { dest: WORKSPACES.COFFEE_COUNTER, state: "STANDING" as const, emote: "☕ Pesan Kopi", msg: "memesan espresso di Barista Counter" },
-          { dest: WORKSPACES.LOUNGE_L2, state: "CHATTING" as const, emote: "🛋️️ Relax L2", msg: "bersantai di Lounge L2" },
+          { dest: WORKSPACES.LOUNGE_L2, state: "CHATTING" as const, emote: "🛋 Relax L2", msg: "bersantai di Lounge L2" },
           { dest: WORKSPACES.BALCONY_L2, state: "STANDING" as const, emote: "🌿 Santai Balkon", msg: "melihat pemandangan dari Balkon L2" },
         ];
 
@@ -963,7 +1195,7 @@ function AutonomousAgent3D({
         <DiverseSimsCharacter agent={agent} state={animState} emote={emote} />
       </group>
 
-      <Html position={[0, 1.7, 0]} center precision={1}>
+      <Html position={[0, 1.7, 0]} center>
         <div
           onClick={() => onSelect(agent)}
           className={`cursor-pointer text-slate-800 text-[10px] px-2.5 py-0.5 rounded-full shadow-md border whitespace-nowrap transition flex items-center gap-1 select-none ${
@@ -983,7 +1215,7 @@ function AutonomousAgent3D({
 }
 
 // ==========================================
-// 7. STRUKTUR GEDUNG DENGAN REALISTIC MATERIALS
+// 9. STRUKTUR GEDUNG UTAMA LANTAI 1 & LANTAI 2
 // ==========================================
 function BuildingStructure() {
   return (
@@ -1024,7 +1256,7 @@ function BuildingStructure() {
 }
 
 // ==========================================
-// 8. KOMPONEN UTAMA OFFICE CANVAS
+// 10. KOMPONEN UTAMA OFFICE CANVAS
 // ==========================================
 export default function OfficeCanvas() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -1047,11 +1279,11 @@ export default function OfficeCanvas() {
   const loadMockAgents = () => {
     const mock: Agent[] = [
       { id: "ceo", name: "Rian CEO", division: "Executive", role: "CEO", position_x: 0, position_y: 0, position_z: -3, status: "Active" },
-      { id: "tech_mgr", name: "Alex Tech", division: "Technology", role: "Manager", position_x: -6, position_y: 0, position_z: -2, status: "Active" },
-      { id: "dev_1", name: "Sarah Dev", division: "Technology", role: "Specialist", position_x: -8, position_y: 0, position_z: -2, status: "Active" },
-      { id: "design_mgr", name: "Siti Design", division: "Product & Design", role: "Manager", position_x: 6, position_y: 0, position_z: -2, status: "Active" },
-      { id: "sales_mgr", name: "Deni Sales", division: "Sales & BD", role: "Manager", position_x: -6, position_y: 4.5, position_z: 2, status: "Active" },
-      { id: "hr_mgr", name: "Maya HR", division: "HR & Operations", role: "Manager", position_x: 6, position_y: 4.5, position_z: 2, status: "Active" },
+      { id: "tech_mgr", name: "Alex Tech", division: "Technology", role: "Manager", position_x: -8.5, position_y: 0, position_z: -3, status: "Active" },
+      { id: "dev_1", name: "Sarah Dev", division: "Technology", role: "Specialist", position_x: -10, position_y: 0, position_z: -3, status: "Active" },
+      { id: "design_mgr", name: "Siti Design", division: "Product & Design", role: "Manager", position_x: 8.5, position_y: 0, position_z: -3, status: "Active" },
+      { id: "sales_mgr", name: "Deni Sales", division: "Sales & BD", role: "Manager", position_x: -8.5, position_y: 4.5, position_z: 2, status: "Active" },
+      { id: "hr_mgr", name: "Maya HR", division: "HR & Operations", role: "Manager", position_x: 8.5, position_y: 4.5, position_z: 2, status: "Active" },
     ];
     setAgents(mock);
   };
@@ -1098,9 +1330,9 @@ export default function OfficeCanvas() {
       <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur border border-slate-200 text-slate-800 p-3.5 rounded-2xl shadow-lg flex items-center gap-4">
         <div>
           <h1 className="font-bold text-sm tracking-wide flex items-center gap-2 text-indigo-900">
-            <span>☀️️</span> Photorealistic 3D Sims Office Environment
+            <span>🏢</span> 3D AI Office HQ — Private Division Suites
           </h1>
-          <p className="text-xs text-slate-500">Auto Glass Elevator Doors, PBR Materials & Dynamic Queuing</p>
+          <p className="text-xs text-slate-500">7 Partitioned Division Offices with Custom Aesthetics & Glass Walls</p>
         </div>
       </div>
 
@@ -1139,13 +1371,14 @@ export default function OfficeCanvas() {
 
         <ContactShadows opacity={0.45} scale={35} blur={1.5} far={10} color="#000000" />
 
-        {/* Struktur Gedung, Tangga, Lift, Kantin */}
+        {/* Gedung, Tangga, Lift, Kantin & Ruangan Divisi Privat */}
         <BuildingStructure />
+        <AllDivisionRooms />
         <Staircase3D />
         <GlassElevator3D />
         <CanteenArea />
 
-        {/* Meja Kerja Statis */}
+        {/* Meja Kerja Statis di Setiap Ruangan */}
         {agents.map((agent) => {
           const isFloor2 = ["Sales & BD", "Finance & Legal", "HR & Operations"].includes(agent.division);
           const homeY = isFloor2 ? 4.5 : 0;
