@@ -420,7 +420,6 @@ function AutonomousAgent3D({
 
   const color = DIVISION_COLORS[agent.division] || "#64748b";
 
-  // EFEK KOORDINASI BERJALAN SAAT DELEGASI TERJADI
   useEffect(() => {
     if (isBackendWorking || isTargetInvolved) {
       setWaypointQueue([
@@ -545,8 +544,9 @@ function BuildingStructure() {
 export default function OfficeCanvas() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [activeTab, setActiveTab] = useState<"brief" | "pribadi">("brief");
+  const [activeTab, setActiveTab] = useState<"brief" | "pribadi">("pribadi");
   const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
+  const [messagesByAgent, setMessagesByAgent] = useState<Record<string, { sender: string; text: string }[]>>({});
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [involvedAgentIds, setInvolvedAgentIds] = useState<string[]>([]);
@@ -610,29 +610,48 @@ export default function OfficeCanvas() {
 
   const handleSelectAgent = async (agent: Agent) => {
     setSelectedAgent(agent);
-    setActiveTab("brief");
-    setMessages([]);
+    // Otomatis membuka tab percakapan pribadi agar obrolan langsung terlihat
+    setActiveTab("pribadi");
+
+    // Tampilkan pesan dari memori lokal terlebih dahulu jika ada
+    if (messagesByAgent[agent.id]) {
+      setMessages(messagesByAgent[agent.id]);
+    } else {
+      setMessages([]);
+    }
 
     try {
       const res = await fetch(`https://office-ai-backend.vercel.app/messages/${agent.id}`);
       const data = await res.json();
       if (data.messages && data.messages.length > 0) {
-        setMessages(
-          data.messages.map((m: { sender: string; text: string }) => ({
-            sender: m.sender === "user" || m.sender === "You" ? "You" : m.sender,
-            text: m.text,
-          }))
-        );
+        const fetchedMsgs = data.messages.map((m: { sender: string; text: string }) => ({
+          sender: m.sender === "user" || m.sender === "You" ? "You" : m.sender,
+          text: m.text,
+        }));
+        setMessages(fetchedMsgs);
+        setMessagesByAgent((prev) => ({
+          ...prev,
+          [agent.id]: fetchedMsgs,
+        }));
       }
     } catch {
-      // Fallback
+      // Fallback tetap menggunakan memori lokal
     }
   };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !selectedAgent) return;
     const userMsg = inputText;
-    setMessages((prev) => [...prev, { sender: "You", text: userMsg }]);
+    const currentAgentId = selectedAgent.id;
+    const userMsgObj = { sender: "You", text: userMsg };
+
+    // Update state tampilan & memori lokal
+    setMessages((prev) => [...prev, userMsgObj]);
+    setMessagesByAgent((prev) => ({
+      ...prev,
+      [currentAgentId]: [...(prev[currentAgentId] || []), userMsgObj],
+    }));
+
     setInputText("");
     setLoading(true);
 
@@ -640,7 +659,7 @@ export default function OfficeCanvas() {
       const res = await fetch("https://office-ai-backend.vercel.app/chat/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_id: selectedAgent.id, message: userMsg }),
+        body: JSON.stringify({ agent_id: currentAgentId, message: userMsg }),
       });
       const data = await res.json();
       const replyText = Array.isArray(data.response) ? data.response[0]?.text : data.response;
@@ -650,16 +669,29 @@ export default function OfficeCanvas() {
         setTimeout(() => setInvolvedAgentIds([]), 14000);
       }
 
-      if (replyText) {
-        setMessages((prev) => [...prev, { sender: selectedAgent.name, text: replyText }]);
-      } else {
-        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg, agents);
-        setMessages((prev) => [...prev, { sender: selectedAgent.name, text: naturalReply }]);
-      }
+      const replySender = replyText ? (data.agent_name || selectedAgent.name) : selectedAgent.name;
+      const finalReplyText = replyText || generateNaturalHumanResponse(selectedAgent, userMsg, agents);
+      const replyMsgObj = { sender: replySender, text: finalReplyText };
+
+      setMessages((prev) => [...prev, replyMsgObj]);
+      setMessagesByAgent((prev) => ({
+        ...prev,
+        [currentAgentId]: [...(prev[currentAgentId] || []), replyMsgObj],
+        ...(data.agent_id && data.agent_id !== currentAgentId
+          ? { [data.agent_id]: [...(prev[data.agent_id] || []), userMsgObj, replyMsgObj] }
+          : {}),
+      }));
     } catch {
       setTimeout(() => {
         const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg, agents);
-        setMessages((prev) => [...prev, { sender: selectedAgent.name, text: naturalReply }]);
+        const fallbackObj = { sender: selectedAgent.name, text: naturalReply };
+
+        setMessages((prev) => [...prev, fallbackObj]);
+        setMessagesByAgent((prev) => ({
+          ...prev,
+          [currentAgentId]: [...(prev[currentAgentId] || []), fallbackObj],
+        }));
+
         setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
         setTimeout(() => setInvolvedAgentIds([]), 14000);
         setLoading(false);
