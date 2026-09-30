@@ -193,12 +193,12 @@ function EnclosedDivisionRoom({
   icon: string;
   color: string;
   position: [number, number, number];
-  size: [number, number]; // [width, depth]
+  size: [number, number];
   doorSide?: "front" | "back" | "left" | "right";
   children?: React.ReactNode;
 }) {
   const [w, d] = size;
-  const h = 2.2; // Tinggi Dinding Kaca
+  const h = 2.2;
   const wallThickness = 0.06;
   const doorWidth = 1.6;
 
@@ -209,7 +209,6 @@ function EnclosedDivisionRoom({
         <planeGeometry args={[w, d]} />
         <meshStandardMaterial color={color} transparent opacity={0.22} roughness={0.8} />
       </mesh>
-      {/* Border Ring Karpet */}
       <mesh position={[0, 0.018, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[w / 2 - 0.1, w / 2, 4]} />
         <meshBasicMaterial color={color} transparent opacity={0.4} side={THREE.DoubleSide} />
@@ -245,20 +244,17 @@ function EnclosedDivisionRoom({
         <meshStandardMaterial color={color} metalness={0.8} />
       </mesh>
 
-      {/* DINDING DEPAN (DENGAN CELAH PINTU MASUK) */}
+      {/* DINDING DEPAN (CELAH PINTU) */}
       {doorSide === "front" && (
         <group position={[0, 0, d / 2]}>
-          {/* Panel Kaca Kiri Pintu */}
           <mesh position={[-(w / 2 + doorWidth / 2) / 2, h / 2, 0]}>
             <boxGeometry args={[(w - doorWidth) / 2, h, wallThickness]} />
             <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} />
           </mesh>
-          {/* Panel Kaca Kanan Pintu */}
           <mesh position={[(w / 2 + doorWidth / 2) / 2, h / 2, 0]}>
             <boxGeometry args={[(w - doorWidth) / 2, h, wallThickness]} />
             <meshStandardMaterial color="#38bdf8" transparent opacity={0.15} roughness={0.05} />
           </mesh>
-          {/* Ambang Atas Pintu */}
           <mesh position={[0, h - 0.2, 0]}>
             <boxGeometry args={[doorWidth, 0.4, wallThickness]} />
             <meshStandardMaterial color="#38bdf8" transparent opacity={0.25} />
@@ -268,7 +264,6 @@ function EnclosedDivisionRoom({
             <meshStandardMaterial color={color} metalness={0.8} />
           </mesh>
 
-          {/* Plang Title Signage Ruangan */}
           <Html position={[0, h + 0.25, 0.05]} center>
             <div
               className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-white shadow-xl flex items-center gap-1.5 border border-white/20 select-none whitespace-nowrap"
@@ -292,8 +287,6 @@ function EnclosedDivisionRoom({
 function AllDivisionRooms() {
   return (
     <group>
-      {/* ================= LANTAI 1 (Y = 0) ================= */}
-
       {/* 👑 1. Executive Suite (CEO) */}
       <EnclosedDivisionRoom
         title="EXECUTIVE CEO SUITE"
@@ -302,7 +295,6 @@ function AllDivisionRooms() {
         position={[0, 0, -3.0]}
         size={[7.0, 5.0]}
       >
-        {/* Set Sofa Lounge VIP CEO */}
         <group position={[-1.8, 0, 0.8]}>
           <mesh castShadow position={[0, 0.2, 0]}>
             <boxGeometry args={[1.4, 0.25, 0.6]} />
@@ -317,7 +309,6 @@ function AllDivisionRooms() {
             <meshStandardMaterial color="#38bdf8" transparent opacity={0.4} />
           </mesh>
         </group>
-        {/* Lampu Warm Light CEO */}
         <pointLight position={[0, 2.1, 0]} color="#fef08a" intensity={2.0} distance={5} />
       </EnclosedDivisionRoom>
 
@@ -329,7 +320,6 @@ function AllDivisionRooms() {
         position={[-8.5, 0, -3.0]}
         size={[8.0, 5.0]}
       >
-        {/* Server Rack Datacenter Accent */}
         <group position={[-3.2, 0, -1.8]}>
           <mesh castShadow position={[0, 0.9, 0]}>
             <boxGeometry args={[0.6, 1.8, 0.6]} />
@@ -350,7 +340,6 @@ function AllDivisionRooms() {
         position={[8.5, 0, -3.0]}
         size={[8.0, 5.0]}
       >
-        {/* Papan Color Palette & Canvas Design */}
         <mesh position={[3.2, 1.2, -1.8]}>
           <boxGeometry args={[0.05, 1.1, 1.6]} />
           <meshStandardMaterial color="#a855f7" emissive="#c084fc" emissiveIntensity={0.4} />
@@ -365,14 +354,11 @@ function AllDivisionRooms() {
         position={[8.5, 0, 3.5]}
         size={[8.0, 5.0]}
       >
-        {/* Dashboard Analytics Board */}
         <mesh position={[0, 1.3, -2.4]}>
           <boxGeometry args={[1.8, 1.0, 0.05]} />
           <meshStandardMaterial color="#14532d" emissive="#22c55e" emissiveIntensity={0.5} />
         </mesh>
       </EnclosedDivisionRoom>
-
-      {/* ================= LANTAI 2 MEZZANINE (Y = 4.5) ================= */}
 
       {/* 🚀 5. Sales & BD Division Suite */}
       <EnclosedDivisionRoom
@@ -382,7 +368,6 @@ function AllDivisionRooms() {
         position={[-8.5, 4.5, -3.0]}
         size={[8.0, 5.0]}
       >
-        {/* Graph Target Revenue Wall */}
         <mesh position={[0, 1.3, -2.4]}>
           <boxGeometry args={[2.0, 0.9, 0.05]} />
           <meshStandardMaterial color="#7c2d12" emissive="#f97316" emissiveIntensity={0.5} />
@@ -392,12 +377,11 @@ function AllDivisionRooms() {
       {/* ⚖️ 6. Finance & Legal Suite */}
       <EnclosedDivisionRoom
         title="FINANCE & LEGAL"
-        icon="⚖️"
+        icon="⚖️️"
         color="#ca8a04"
         position={[0, 4.5, -3.0]}
         size={[7.0, 5.0]}
       >
-        {/* Filing Cabinets / Safe Vault Accent */}
         <mesh castShadow position={[-2.6, 0.6, -1.8]}>
           <boxGeometry args={[0.7, 1.2, 0.5]} />
           <meshStandardMaterial color="#451a03" roughness={0.3} metalness={0.7} />
@@ -412,7 +396,6 @@ function AllDivisionRooms() {
         position={[8.5, 4.5, -3.0]}
         size={[8.0, 5.0]}
       >
-        {/* Interview Corner Plant Decor */}
         <group position={[3.1, 0, -1.8]}>
           <mesh castShadow position={[0, 0.3, 0]}>
             <cylinderGeometry args={[0.25, 0.18, 0.6, 16]} />
@@ -744,7 +727,6 @@ function DiverseSimsCharacter({
 function CanteenArea() {
   return (
     <group>
-      {/* Bar Counter Espresso & Cafe */}
       <group position={[-8.5, 0, 6.2]}>
         <mesh castShadow position={[0, 0.45, 0]}>
           <boxGeometry args={[2.2, 0.9, 0.8]} />
@@ -764,7 +746,6 @@ function CanteenArea() {
         </mesh>
       </group>
 
-      {/* Meja Makan Kantin 1 */}
       <group position={[-5.5, 0, 5.2]}>
         <mesh castShadow position={[0, 0.38, 0]}>
           <cylinderGeometry args={[0.65, 0.65, 0.05, 32]} />
@@ -798,7 +779,6 @@ function CanteenArea() {
         </mesh>
       </group>
 
-      {/* Meja Makan Kantin 2 */}
       <group position={[-5.5, 0, 7.2]}>
         <mesh castShadow position={[0, 0.38, 0]}>
           <cylinderGeometry args={[0.65, 0.65, 0.05, 32]} />
@@ -823,7 +803,6 @@ function CanteenArea() {
         ))}
       </group>
 
-      {/* Mezzanine Lounge Sofa di Lantai 2 */}
       <group position={[-5, 4.5, 2.0]}>
         <mesh castShadow position={[0, 0.2, 0]}>
           <boxGeometry args={[1.8, 0.25, 0.8]} />
@@ -1040,7 +1019,7 @@ function AutonomousAgent3D({
 }) {
   const isFloor2 = ["Sales & BD", "Finance & Legal", "HR & Operations"].includes(agent.division);
   const homeY = isFloor2 ? 4.5 : 0;
-  const homeZ = isFloor2 ? agent.position_z - 10.0 : agent.position_z;
+  const homeZ = isFloor2 && agent.position_z > 0 ? agent.position_z - 10.0 : agent.position_z;
   const homeX = agent.position_x;
   const chairZ = homeZ + 0.25;
 
@@ -1220,14 +1199,12 @@ function AutonomousAgent3D({
 function BuildingStructure() {
   return (
     <group>
-      {/* Lantai Utama L1 (Keramik Glossy) */}
       <mesh receiveShadow position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[28, 22]} />
         <meshStandardMaterial color="#f8fafc" roughness={0.1} metalness={0.05} />
       </mesh>
       <gridHelper args={[28, 28, "#cbd5e1", "#e2e8f0"]} position={[0, -0.04, 0]} />
 
-      {/* Lantai 2 Mezzanine */}
       <group position={[0, 4.4, 0]}>
         <mesh receiveShadow position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[28, 22]} />
@@ -1239,7 +1216,6 @@ function BuildingStructure() {
         </mesh>
       </group>
 
-      {/* Tiang Arsitektur Beton */}
       {[
         [-13, -10],
         [13, -10],
@@ -1271,22 +1247,63 @@ export default function OfficeCanvas() {
       .then((res) => res.json())
       .then((data) => {
         if (data.agents && data.agents.length > 0) setAgents(data.agents);
-        else loadMockAgents();
+        else setAgents(get36FullMockAgents());
       })
-      .catch(() => loadMockAgents());
+      .catch(() => setAgents(get36FullMockAgents()));
   }, []);
 
-  const loadMockAgents = () => {
-    const mock: Agent[] = [
-      { id: "ceo", name: "Rian CEO", division: "Executive", role: "CEO", position_x: 0, position_y: 0, position_z: -3, status: "Active" },
-      { id: "tech_mgr", name: "Alex Tech", division: "Technology", role: "Manager", position_x: -8.5, position_y: 0, position_z: -3, status: "Active" },
-      { id: "dev_1", name: "Sarah Dev", division: "Technology", role: "Specialist", position_x: -10, position_y: 0, position_z: -3, status: "Active" },
-      { id: "design_mgr", name: "Siti Design", division: "Product & Design", role: "Manager", position_x: 8.5, position_y: 0, position_z: -3, status: "Active" },
-      { id: "sales_mgr", name: "Deni Sales", division: "Sales & BD", role: "Manager", position_x: -8.5, position_y: 4.5, position_z: 2, status: "Active" },
-      { id: "hr_mgr", name: "Maya HR", division: "HR & Operations", role: "Manager", position_x: 8.5, position_y: 4.5, position_z: 2, status: "Active" },
-    ];
-    setAgents(mock);
-  };
+  // MEMUAT SELURUH 36 AGENT LENGKAP BILA BACKEND TERDAPAT DELAY/FALLBACK
+  const get36FullMockAgents = (): Agent[] => [
+    // 0. Executive (CEO)
+    { id: "ceo-main", name: "Pak Pakar (CEO)", division: "Executive", role: "CEO", position_x: 0.0, position_y: 0.0, position_z: -3.0, status: "Active" },
+
+    // 1. Technology Division
+    { id: "tech-lead", name: "Alex (Tech Lead)", division: "Technology", role: "Manager", position_x: -6.5, position_y: 0.0, position_z: -2.0, status: "Active" },
+    { id: "fe-dev-1", name: "Siti (Frontend Dev)", division: "Technology", role: "Specialist", position_x: -8.5, position_y: 0.0, position_z: -2.0, status: "Active" },
+    { id: "fe-dev-2", name: "Rian (Mobile Dev)", division: "Technology", role: "Specialist", position_x: -10.5, position_y: 0.0, position_z: -2.0, status: "Active" },
+    { id: "be-dev-1", name: "Budi (Backend Dev)", division: "Technology", role: "Specialist", position_x: -6.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+    { id: "be-dev-2", name: "Dedi (DevOps Eng)", division: "Technology", role: "Specialist", position_x: -8.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+    { id: "qa-eng", name: "Maya (QA Lead)", division: "Technology", role: "Specialist", position_x: -10.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+
+    // 2. Product & Design Division
+    { id: "product-head", name: "Diana (Head of Product)", division: "Product & Design", role: "Manager", position_x: 6.5, position_y: 0.0, position_z: -2.0, status: "Active" },
+    { id: "uiux-1", name: "Kevin (UI/UX Lead)", division: "Product & Design", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: -2.0, status: "Active" },
+    { id: "uiux-2", name: "Nadia (UX Researcher)", division: "Product & Design", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: -2.0, status: "Active" },
+    { id: "design-3d", name: "Raka (3D Artist)", division: "Product & Design", role: "Specialist", position_x: 6.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+    { id: "graphic-des", name: "Sari (Graphic Designer)", division: "Product & Design", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+    { id: "scrum-master", name: "Bagas (Scrum Master)", division: "Product & Design", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: -4.0, status: "Active" },
+
+    // 3. Marketing Division
+    { id: "mkt-lead", name: "Eko (Marketing Lead)", division: "Marketing", role: "Manager", position_x: 6.5, position_y: 0.0, position_z: 2.5, status: "Active" },
+    { id: "content-writer", name: "Rina (Content Lead)", division: "Marketing", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: 2.5, status: "Active" },
+    { id: "seo-spec", name: "Fajar (SEO Specialist)", division: "Marketing", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: 2.5, status: "Active" },
+    { id: "social-media", name: "Anisa (Social Media Mgr)", division: "Marketing", role: "Specialist", position_x: 6.5, position_y: 0.0, position_z: 4.5, status: "Active" },
+    { id: "ppc-spec", name: "Gilang (Performance Mkt)", division: "Marketing", role: "Specialist", position_x: 8.5, position_y: 0.0, position_z: 4.5, status: "Active" },
+    { id: "pr-spec", name: "Tania (PR Specialist)", division: "Marketing", role: "Specialist", position_x: 10.5, position_y: 0.0, position_z: 4.5, status: "Active" },
+
+    // 4. Sales & BD Division (Lantai 2)
+    { id: "sales-lead", name: "Hendra (VP of Sales)", division: "Sales & BD", role: "Manager", position_x: -6.5, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "account-exec", name: "Lia (Account Executive)", division: "Sales & BD", role: "Specialist", position_x: -8.5, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "bizdev-1", name: "Reza (BizDev Manager)", division: "Sales & BD", role: "Specialist", position_x: -10.5, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "cust-success", name: "Putri (Customer Success)", division: "Sales & BD", role: "Specialist", position_x: -6.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+    { id: "sales-dev", name: "Taufik (SDR Lead)", division: "Sales & BD", role: "Specialist", position_x: -8.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+    { id: "crm-spec", name: "Vina (CRM Specialist)", division: "Sales & BD", role: "Specialist", position_x: -10.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+
+    // 5. Finance & Legal Division (Lantai 2)
+    { id: "fin-lead", name: "Bambang (CFO)", division: "Finance & Legal", role: "Manager", position_x: -1.8, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "accountant", name: "Yuni (Senior Accountant)", division: "Finance & Legal", role: "Specialist", position_x: 0.0, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "legal-counsel", name: "Agung (Legal Counsel)", division: "Finance & Legal", role: "Specialist", position_x: 1.8, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "payroll-spec", name: "Dewi (Payroll Admin)", division: "Finance & Legal", role: "Specialist", position_x: -1.8, position_y: 4.5, position_z: -4.0, status: "Active" },
+    { id: "procurement", name: "Irfan (Procurement Mgr)", division: "Finance & Legal", role: "Specialist", position_x: 0.0, position_y: 4.5, position_z: -4.0, status: "Active" },
+    { id: "auditor", name: "Citra (Internal Auditor)", division: "Finance & Legal", role: "Specialist", position_x: 1.8, position_y: 4.5, position_z: -4.0, status: "Active" },
+
+    // 6. HR & Operations Division (Lantai 2)
+    { id: "hr-lead", name: "Siska (CHRO)", division: "HR & Operations", role: "Manager", position_x: 6.5, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "recruiter-1", name: "Doni (Tech Recruiter)", division: "HR & Operations", role: "Specialist", position_x: 8.5, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "hrbp", name: "Indah (HRBP)", division: "HR & Operations", role: "Specialist", position_x: 10.5, position_y: 4.5, position_z: -2.0, status: "Active" },
+    { id: "office-mgr", name: "Joko (Office Manager)", division: "HR & Operations", role: "Specialist", position_x: 7.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+    { id: "people-dev", name: "Laras (Learning & Dev)", division: "HR & Operations", role: "Specialist", position_x: 9.5, position_y: 4.5, position_z: -4.0, status: "Active" },
+  ];
 
   const handleStatusUpdate = (id: string, text: string) => {
     setActivityLogs((prev) => [
@@ -1330,9 +1347,9 @@ export default function OfficeCanvas() {
       <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur border border-slate-200 text-slate-800 p-3.5 rounded-2xl shadow-lg flex items-center gap-4">
         <div>
           <h1 className="font-bold text-sm tracking-wide flex items-center gap-2 text-indigo-900">
-            <span>🏢</span> 3D AI Office HQ — Private Division Suites
+            <span>🏢</span> 3D AI Office HQ — 36 Active AI Agents
           </h1>
-          <p className="text-xs text-slate-500">7 Partitioned Division Offices with Custom Aesthetics & Glass Walls</p>
+          <p className="text-xs text-slate-500">36 AI Agents across 7 Private Division Rooms & 2 Floor Layout</p>
         </div>
       </div>
 
@@ -1378,11 +1395,11 @@ export default function OfficeCanvas() {
         <GlassElevator3D />
         <CanteenArea />
 
-        {/* Meja Kerja Statis di Setiap Ruangan */}
+        {/* Meja Kerja Statis untuk Seluruh 36 Agen */}
         {agents.map((agent) => {
           const isFloor2 = ["Sales & BD", "Finance & Legal", "HR & Operations"].includes(agent.division);
           const homeY = isFloor2 ? 4.5 : 0;
-          const homeZ = isFloor2 ? agent.position_z - 10.0 : agent.position_z;
+          const homeZ = isFloor2 && agent.position_z > 0 ? agent.position_z - 10.0 : agent.position_z;
           const homeX = agent.position_x;
           const isAgentWorking = loading && selectedAgent?.id === agent.id;
           const color = DIVISION_COLORS[agent.division] || "#64748b";
@@ -1394,7 +1411,7 @@ export default function OfficeCanvas() {
           );
         })}
 
-        {/* Agen Otonom */}
+        {/* 36 Agen Otonom */}
         {agents.map((agent) => (
           <AutonomousAgent3D
             key={agent.id}
