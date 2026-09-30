@@ -69,11 +69,72 @@ function getAgentAppearance(agent: Agent) {
   };
 }
 
-// Generator Respons Manusiawi Alami Berdasarkan Persona Agen
-function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
+// LOGIKA CERDAS RESPONS FORMAL & KONTEKSTUAL MANUSIAWI
+function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: Agent[]): string {
   const lowerMsg = userMsg.toLowerCase();
 
-  // Pertanyaan seputar kapabilitas / jobdesk / apa yang bisa dilakukan
+  // Kata kunci penanda pertanyaan/instruksi formal
+  const formalKeywords = [
+    "laporan", "strategi", "analisis", "dokumen", "evaluasi", "proyeksi",
+    "rekomendasi", "prosedur", "anggaran", "sop", "kontrak", "arsitektur",
+    "audit", "rencana kerja", "roadmap", "kepatuhan", "metrik", "kpi",
+    "risiko", "resiko", "kebijakan", "instruksi", "formal", "resmi",
+    "proposal", "presentasi", "efisiensi", "tinjauan", "studi kelayakan"
+  ];
+
+  const isFormalQuery = formalKeywords.some((key) => lowerMsg.includes(key));
+
+  // 1. Respon Formalitas jika pengguna mengajukan pertanyaan formal/bisnis
+  if (isFormalQuery) {
+    return `Yth. Bapak/Ibu,\n\nMenindaklanjuti permohonan/pertanyaan Anda mengenai "${userMsg}", berikut adalah tanggapan resmi dari Divisi ${agent.division} (${agent.role}):\n\n1. Tanggung Jawab Operasional Divisi:\n   ${agent.system_prompt || "Pelaksanaan tugas diselaraskan dengan standar operasional perusahaan yang berlaku."}\n\n2. Tindak Lanjut & Evaluasi:\n   Hal ini telah kami catat dalam agenda prioritas kerja divisi. Kami akan melakukan pengkajian mendalam serta menyusun dokumentasi/rekomendasi teknis sesuai Standar Operasional Prosedur (SOP).\n\nDemikian informasi ini kami sampaikan. Apabila terdapat hal yang memerlukan konfirmasi atau diskusi lebih lanjut, silakan sampaikan kembali.\n\nHormat kami,\n${agent.name}\n${agent.role} - Divisi ${agent.division}`;
+  }
+
+  // Cari pimpinan divisi dan CEO
+  const divisionManager = allAgents.find(
+    (a) => a.division === agent.division && (a.role === "Manager" || a.role === "CEO")
+  );
+  const ceo = allAgents.find((a) => a.role === "CEO" || a.division === "Executive");
+
+  // 2. Pertanyaan seputar bos / pimpinan / atasan / CEO
+  if (
+    lowerMsg.includes("pimpinan") ||
+    lowerMsg.includes("bos") ||
+    lowerMsg.includes("atasan") ||
+    lowerMsg.includes("head") ||
+    lowerMsg.includes("lead") ||
+    lowerMsg.includes("manajer") ||
+    lowerMsg.includes("manager") ||
+    lowerMsg.includes("ceo")
+  ) {
+    if (agent.role === "CEO") {
+      return `Saya sendiri Pak Pakar yang memimpin perusahaan ini sebagai CEO. Namun, di tiap divisi ada manajer masing-masing yang bertanggung jawab atas operasional timnya.`;
+    }
+
+    if (lowerMsg.includes("bos besar") || lowerMsg.includes("ceo") || lowerMsg.includes("pemilik")) {
+      return `Pimpinan utama perusahaan kami adalah ${ceo ? ceo.name : "Pak Pakar (CEO)"}. Sedangkan untuk divisi ${agent.division}, pimpinan langsungnya adalah ${divisionManager ? divisionManager.name : "Manager tim kami"}.`;
+    }
+
+    if (agent.role === "Manager") {
+      return `Di divisi ${agent.division}, saya yang memimpin tim. Untuk tingkat perusahaan, seluruh manajer melapor langsung kepada ${ceo ? ceo.name : "Pak Pakar (CEO)"}.`;
+    }
+
+    return `Atasan langsung saya di divisi ${agent.division} adalah ${divisionManager ? divisionManager.name : "Manager tim kami"}, dan pimpinan tertinggi perusahaan adalah ${ceo ? ceo.name : "Pak Pakar (CEO)"}.`;
+  }
+
+  // 3. Pertanyaan seputar tim / rekan kerja
+  if (
+    lowerMsg.includes("teman") ||
+    lowerMsg.includes("tim") ||
+    lowerMsg.includes("siapa saja") ||
+    lowerMsg.includes("siapa aja") ||
+    lowerMsg.includes("anggota")
+  ) {
+    const team = allAgents.filter((a) => a.division === agent.division && a.id !== agent.id);
+    const teamNames = team.map((a) => a.name).join(", ");
+    return `Di divisi ${agent.division}, saya bekerjasama dengan ${teamNames}. Kami rutin berkoordinasi untuk menyelesaikan target kerja divisi.`;
+  }
+
+  // 4. Pertanyaan seputar kapabilitas / jobdesk / keahlian
   if (
     lowerMsg.includes("bisa apa") ||
     lowerMsg.includes("tugas") ||
@@ -83,13 +144,16 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
     lowerMsg.includes("keahlian")
   ) {
     const promptText = agent.system_prompt
-      ? agent.system_prompt.replace(/Kamu adalah /g, "Saya adalah ")
+      ? agent.system_prompt
+          .replace(/Kamu adalah /g, "Saya ")
+          .replace(/Menganalisis/g, "menganalisis")
+          .replace(/Mengelola/g, "mengelola")
       : `fokus pada operasional tim ${agent.division}`;
 
-    return `Halo! Saya ${agent.name}, ${agent.role} di divisi ${agent.division}.\n\nTugas utama saya sehari-hari yaitu:\n• ${promptText}\n\nKalau kamu butuh bantuan, analisa, atau mau diskusi seputar area kerja saya ini, bilang saja ya! Mau kita mulai bahas apa sekarang?`;
+    return `Halo, saya ${agent.name}, ${agent.role} di divisi ${agent.division}.\n\nTugas dan ruang lingkup kerja saya meliputi:\n• ${promptText}\n\nApakah ada topik spesifik terkait area ini yang ingin kita bahas?`;
   }
 
-  // Sapaan ramah
+  // 5. Sapaan harian
   if (
     lowerMsg.includes("halo") ||
     lowerMsg.includes("hai") ||
@@ -99,16 +163,21 @@ function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
     lowerMsg.includes("sore") ||
     lowerMsg.includes("malam")
   ) {
-    return `Hai! Selamat datang di area ${agent.division}. Saya ${agent.name}. Ada yang bisa saya bantu atau mau didiskusikan hari ini?`;
+    return `Halo! Saya ${agent.name}. Ada yang bisa saya bantu atau diskusikan mengenai divisi ${agent.division} hari ini?`;
   }
 
-  // Ucapan terima kasih
+  // 6. Tanya kabar / aktivitas
+  if (lowerMsg.includes("apa kabar") || lowerMsg.includes("lagi apa") || lowerMsg.includes("sibuk")) {
+    return `Kabar baik. Saat ini saya sedang meninjau beberapa tugas operasional untuk divisi ${agent.division}. Ada hal yang perlu saya bantu?`;
+  }
+
+  // 7. Ucapan terima kasih
   if (lowerMsg.includes("terima kasih") || lowerMsg.includes("makasih") || lowerMsg.includes("thanks")) {
-    return `Sama-sama! Santai saja. Kalau ada kendala lain seputar ${agent.division}, panggil saya lagi ya!`;
+    return `Sama-sama. Apabila memerlukan koordinasi lebih lanjut terkait divisi ${agent.division}, silakan hubungi saya kembali.`;
   }
 
-  // Respons umum alami
-  return `Siap, mengenai "${userMsg}", saya pahami poinnya. Saya tinjau dan kordinasikan dulu dari sudut pandang ${agent.role} di divisi ${agent.division} ya. Ada detail khusus yang perlu saya catat?`;
+  // 8. Respons umum
+  return `Mengenai "${userMsg}", poin tersebut telah saya pahami. Saya akan berkoordinasi dengan tim di divisi ${agent.division} untuk menindaklanjutinya. Mohon informasikan apabila ada detail tambahan.`;
 }
 
 // Navigasi Waypoints Kantor (1 Lantai)
@@ -647,15 +716,15 @@ export default function OfficeCanvas() {
       if (replyText) {
         setMessages((prev) => [...prev, { sender: selectedAgent.name, text: replyText }]);
       } else {
-        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg);
+        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg, agents);
         setMessages((prev) => [...prev, { sender: selectedAgent.name, text: naturalReply }]);
       }
     } catch {
       setTimeout(() => {
-        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg);
+        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg, agents);
         setMessages((prev) => [...prev, { sender: selectedAgent.name, text: naturalReply }]);
         setLoading(false);
-      }, 800);
+      }, 700);
     } finally {
       setLoading(false);
     }
