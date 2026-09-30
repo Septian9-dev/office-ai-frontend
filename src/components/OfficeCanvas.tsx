@@ -68,47 +68,7 @@ function getAgentAppearance(agent: Agent) {
 }
 
 function generateNaturalHumanResponse(agent: Agent, userMsg: string, allAgents: Agent[]): string {
-  const lowerMsg = userMsg.toLowerCase();
-
-  const isBriefingQuery =
-    lowerMsg.includes("briefing") ||
-    lowerMsg.includes("semua divisi") ||
-    lowerMsg.includes("lintas divisi") ||
-    lowerMsg.includes("kumpulkan") ||
-    lowerMsg.includes("rapat") ||
-    lowerMsg.includes("koordinasi") ||
-    lowerMsg.includes("instruksikan") ||
-    lowerMsg.includes("arahkan") ||
-    lowerMsg.includes("minta") ||
-    lowerMsg.includes("tugaskan") ||
-    lowerMsg.includes("perbarui") ||
-    lowerMsg.includes("konsep") ||
-    lowerMsg.includes("estimasi") ||
-    lowerMsg.includes("proyek") ||
-    lowerMsg.includes("projek") ||
-    lowerMsg.includes("modern") ||
-    lowerMsg.includes("video") ||
-    lowerMsg.includes("iklan");
-
-  if (isBriefingQuery) {
-    if (agent.role === "CEO" || agent.division === "Executive") {
-      const mktMgr = allAgents.find((a) => a.division === "Marketing" && a.role === "Manager")?.name || "Eko (Marketing Lead)";
-      const prodMgr = allAgents.find((a) => a.division === "Product & Design" && a.role === "Manager")?.name || "Diana (Head of Product)";
-      
-      return `Siap, instruksi diterima! Saya selaku CEO (Pak Pakar) langsung menginstruksikan tim terkait untuk mengeksekusi tugas ini.\n\n` +
-        `📌 AGENDA UTAMA:\n"${userMsg}"\n\n` +
-        `📋 PEMBAGIAN TUGAS SPESIFIK:\n` +
-        `1. 📢 Divisi Marketing (${mktMgr}):\n` +
-        `   • Mengarahkan Rina (Content Lead) membuat storyboard naskah & Gilang (Performance Mkt) menyusun strategi kampanye.\n\n` +
-        `2. 🎨 Divisi Product & Design (${prodMgr}):\n` +
-        `   • Mengarahkan Raka (3D Artist) untuk membuat pemodelan aset animasi 3D dan Sari (Graphic Designer) menyiapkan materi pendukung.\n\n` +
-        `Seluruh tim sudah menerima instruksi dan langsung berkoordinasi di ruang rapat. Laporan pengerjaan akan diperbarui pada masing-masing percakapan agen.`;
-    } else {
-      return `Instruksi Anda mengenai "${userMsg}" telah saya terima dari Pak Pakar (CEO). Tim kami sedang memproses drafnya.`;
-    }
-  }
-
-  return `Mengenai "${userMsg}", poin tersebut telah saya pahami dan akan ditindaklanjuti oleh tim ${agent.division}.`;
+  return `Mengenai "${userMsg}", poin tersebut telah saya pahami dan sedang diproses oleh tim ${agent.division}.`;
 }
 
 const WORKSPACES: Record<string, Waypoint> = {
@@ -583,9 +543,7 @@ export default function OfficeCanvas() {
 
     setUnreadAgentIds((prev) => prev.filter((id) => id !== agent.id));
 
-    const localMsgs = messagesByAgent[agent.id] || [];
-    setMessages(localMsgs);
-
+    // MENGAMBIL PESAN DARI DATABASE SUPABASE UNTUK MEMASTIKAN HASIL MENDALAM BACKGROUND TASK TERAMBIL
     try {
       const res = await fetch(`https://office-ai-backend.vercel.app/messages/${agent.id}`);
       const data = await res.json();
@@ -599,9 +557,11 @@ export default function OfficeCanvas() {
           ...prev,
           [agent.id]: fetchedMsgs,
         }));
+      } else {
+        setMessages(messagesByAgent[agent.id] || []);
       }
     } catch {
-      // Fallback
+      setMessages(messagesByAgent[agent.id] || []);
     }
   };
 
@@ -631,7 +591,7 @@ export default function OfficeCanvas() {
 
       if (data.involved_ids && Array.isArray(data.involved_ids)) {
         setInvolvedAgentIds(data.involved_ids);
-        setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids])));
+        setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids.filter((id: string) => id !== currentAgentId)])));
         setTimeout(() => setInvolvedAgentIds([]), 14000);
       }
 
@@ -655,9 +615,6 @@ export default function OfficeCanvas() {
           [currentAgentId]: [...(prev[currentAgentId] || []), fallbackObj],
         }));
 
-        setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
-        setUnreadAgentIds((prev) => Array.from(new Set([...prev, "uiux-1", "design-3d", "fe-dev-1"])));
-        setTimeout(() => setInvolvedAgentIds([]), 14000);
         setLoading(false);
       }, 700);
     } finally {
@@ -665,7 +622,6 @@ export default function OfficeCanvas() {
     }
   };
 
-  // PEMBARUAN UTAMA: MODAL BRIEFING CEO DENGAN STATE UPDATE INSTAN
   const handleSendCeoBriefModal = async () => {
     if (!ceoBriefInput.trim()) return;
     const briefText = ceoBriefInput;
@@ -679,7 +635,6 @@ export default function OfficeCanvas() {
 
     const userMsgObj = { sender: "You", text: briefText };
 
-    // 1. Masukkan pertanyaan pengguna ke state percakapan Pak Pakar
     setMessages((prev) => [...(messagesByAgent["ceo-main"] || []), userMsgObj]);
     setMessagesByAgent((prev) => ({
       ...prev,
@@ -693,37 +648,37 @@ export default function OfficeCanvas() {
         body: JSON.stringify({ agent_id: "ceo-main", message: briefText }),
       });
       const data = await res.json();
-      const replyText = Array.isArray(data.response) ? data.response[0]?.text : data.response;
 
-      const replyMsgObj = {
-        sender: data.agent_name || "Pak Pakar (CEO)",
-        text: replyText || generateNaturalHumanResponse(ceoAgent, briefText, agents),
+      const ceoReplyObj = {
+        sender: "Pak Pakar (CEO)",
+        text: data.response || "Laporan briefing telah dikirimkan ke tim.",
       };
 
-      // 2. Masukkan balasan Pak Pakar langsung ke UI percakapan
-      setMessages((prev) => [...prev, replyMsgObj]);
+      setMessages((prev) => [...prev, ceoReplyObj]);
       setMessagesByAgent((prev) => ({
         ...prev,
-        "ceo-main": [...(prev["ceo-main"] || []), replyMsgObj],
+        "ceo-main": [...(prev["ceo-main"] || []), ceoReplyObj],
       }));
 
       if (data.involved_ids && Array.isArray(data.involved_ids)) {
         setInvolvedAgentIds(data.involved_ids);
-        setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids])));
+        setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids.filter((id: string) => id !== "ceo-main")])));
         setTimeout(() => setInvolvedAgentIds([]), 14000);
       }
     } catch {
-      const fallbackReply = generateNaturalHumanResponse(ceoAgent, briefText, agents);
-      const replyMsgObj = { sender: ceoAgent.name, text: fallbackReply };
-
-      setMessages((prev) => [...prev, replyMsgObj]);
+      const ceoFallbackObj = {
+        sender: "Pak Pakar (CEO)",
+        text: "Briefing telah diteruskan. Tim sedang memproses laporan di latar belakang.",
+      };
+      
+      setMessages((prev) => [...prev, ceoFallbackObj]);
       setMessagesByAgent((prev) => ({
         ...prev,
-        "ceo-main": [...(prev["ceo-main"] || []), replyMsgObj],
+        "ceo-main": [...(prev["ceo-main"] || []), ceoFallbackObj],
       }));
 
-      setInvolvedAgentIds(["ceo-main", "uiux-1", "design-3d", "fe-dev-1"]);
-      setUnreadAgentIds(["uiux-1", "design-3d", "fe-dev-1"]);
+      setInvolvedAgentIds(["ceo-main", "content-writer", "design-3d"]);
+      setUnreadAgentIds(["content-writer", "design-3d"]);
       setTimeout(() => setInvolvedAgentIds([]), 14000);
     } finally {
       setLoading(false);
