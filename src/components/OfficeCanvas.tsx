@@ -60,8 +60,32 @@ function getAgentAppearance(agent: Agent) {
   };
 }
 
+// PERBAIKAN UTAMA: RESPON ALAMI UNTUK OBROLAN UMUM & FALLBACK
 function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
-  return `Mengenai "${userMsg}", poin tersebut telah saya pahami dan sedang diproses oleh tim ${agent.division}.`;
+  const lowerMsg = userMsg.toLowerCase().trim();
+
+  const isGreetingOrHelp =
+    lowerMsg.includes("bantu") ||
+    lowerMsg.includes("bisa kamu") ||
+    lowerMsg.includes("halo") ||
+    lowerMsg.includes("hai") ||
+    lowerMsg.includes("pagi") ||
+    lowerMsg.includes("siang") ||
+    lowerMsg.includes("malam") ||
+    lowerMsg.includes("apa kabar");
+
+  if (isGreetingOrHelp) {
+    if (agent.role === "CEO" || agent.id === "ceo-main") {
+      return "Bisa banget! Mau minta tolong apa nih? Kirim aja detail atau briefing-nya, nanti gue bantu koordinasiin ke tim.";
+    }
+    return `Bisa dong! Ada yang bisa gue bantu terkait tugas divisi ${agent.division}?`;
+  }
+
+  if (agent.role === "CEO" || agent.id === "ceo-main") {
+    return `Sip, ide tentang "${userMsg}" udah gue catat. Ada arahan spesifik lagi yang mau ditambahin?`;
+  }
+
+  return `Okee sip! Terkait "${userMsg}", lagi dikoordinasiin sama tim yaa.`;
 }
 
 function EnclosedDivisionRoom({
@@ -184,7 +208,6 @@ function DiverseSimsCharacter({
   useFrame((threeState) => {
     const t = threeState.clock.getElapsedTime();
 
-    // Animasi Duduk & Mengetik di Meja Kerja
     if (leftLegRef.current) leftLegRef.current.rotation.x = -Math.PI / 2;
     if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.PI / 2;
     if (leftArmRef.current) leftArmRef.current.rotation.x = -1.1 + Math.sin(t * 12) * 0.05;
@@ -569,7 +592,7 @@ export default function OfficeCanvas() {
     } catch {
       const ceoFallbackObj = {
         sender: "Pak Pakar (CEO)",
-        text: "Briefing telah diteruskan. Tim sedang memproses laporan di latar belakang.",
+        text: generateNaturalHumanResponse(ceoAgent, briefText),
       };
       
       setMessages((prev) => [...prev, ceoFallbackObj]);
