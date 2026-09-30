@@ -60,55 +60,6 @@ function getAgentAppearance(agent: Agent) {
   };
 }
 
-// PERBAIKAN FUNGSI FALLBACK RESPON MANUSIAWI
-function generateNaturalHumanResponse(agent: Agent, userMsg: string): string {
-  const lowerMsg = userMsg.toLowerCase().trim();
-
-  // 1. Respon kontekstual jika ditanya kesibukan atau aktivitas harian
-  if (
-    lowerMsg.includes("sibuk") ||
-    lowerMsg.includes("lagi apa") ||
-    lowerMsg.includes("kegiatan") ||
-    lowerMsg.includes("ngapain")
-  ) {
-    if (agent.id === "design-3d" || agent.name.includes("Raka")) {
-      return "Lagi fokus optimasi aset 3D sama benerin lighting render-an nih. Ada visual yang mau disiapin?";
-    }
-    if (agent.id === "content-writer" || agent.name.includes("Rina")) {
-      return "Lagi nyusun draf copywriting buat campaign baru nih. Kenapa tuh?";
-    }
-    if (agent.role === "CEO" || agent.id === "ceo-main") {
-      return "Lagi review OKR divisi sama koordinasi strategi minggu ini. Ada hal penting yang mau dibahas?";
-    }
-    return `Lagi nyelesaiin beberapa task operasional di divisi ${agent.division} nih. Ada yang bisa dibantu?`;
-  }
-
-  // 2. Respon sapaan atau tawaran bantuan
-  const isGreetingOrHelp =
-    lowerMsg.includes("bantu") ||
-    lowerMsg.includes("bisa kamu") ||
-    lowerMsg.includes("halo") ||
-    lowerMsg.includes("hai") ||
-    lowerMsg.includes("pagi") ||
-    lowerMsg.includes("siang") ||
-    lowerMsg.includes("malam") ||
-    lowerMsg.includes("apa kabar");
-
-  if (isGreetingOrHelp) {
-    if (agent.role === "CEO" || agent.id === "ceo-main") {
-      return "Bisa banget! Minta tolong apa nih? Sampaikan aja detailnya, nanti dikoordinasiin ke tim.";
-    }
-    return `Bisa dong! Ada yang bisa gue bantu terkait pekerjaan di divisi ${agent.division}?`;
-  }
-
-  // 3. Fallback umum tanpa mengulang template kaku
-  if (agent.role === "CEO" || agent.id === "ceo-main") {
-    return "Sip, poin itu udah gue catat. Ada hal spesifik lain yang mau dibahas?";
-  }
-
-  return "Aman, lagi diproses nih! Nanti langsung dikoordinasiin begitu ada perkembangan terbaru ya.";
-}
-
 function EnclosedDivisionRoom({
   title,
   icon,
@@ -541,7 +492,7 @@ export default function OfficeCanvas() {
       }
 
       const replySender = replyText ? (data.agent_name || selectedAgent.name) : selectedAgent.name;
-      const finalReplyText = replyText || generateNaturalHumanResponse(selectedAgent, userMsg);
+      const finalReplyText = replyText || "Koneksi backend gagal merespons.";
       const replyMsgObj = { sender: replySender, text: finalReplyText };
 
       setMessages((prev) => [...prev, replyMsgObj]);
@@ -549,19 +500,14 @@ export default function OfficeCanvas() {
         ...prev,
         [currentAgentId]: [...(prev[currentAgentId] || []), replyMsgObj],
       }));
-    } catch {
-      setTimeout(() => {
-        const naturalReply = generateNaturalHumanResponse(selectedAgent, userMsg);
-        const fallbackObj = { sender: selectedAgent.name, text: naturalReply };
-
-        setMessages((prev) => [...prev, fallbackObj]);
-        setMessagesByAgent((prev) => ({
-          ...prev,
-          [currentAgentId]: [...(prev[currentAgentId] || []), fallbackObj],
-        }));
-
-        setLoading(false);
-      }, 700);
+    } catch (err) {
+      console.error("API Error:", err);
+      const errorObj = { sender: selectedAgent.name, text: "Gagal terhubung ke server backend." };
+      setMessages((prev) => [...prev, errorObj]);
+      setMessagesByAgent((prev) => ({
+        ...prev,
+        [currentAgentId]: [...(prev[currentAgentId] || []), errorObj],
+      }));
     } finally {
       setLoading(false);
     }
@@ -610,21 +556,18 @@ export default function OfficeCanvas() {
         setUnreadAgentIds((prev) => Array.from(new Set([...prev, ...data.involved_ids.filter((id: string) => id !== "ceo-main")])));
         setTimeout(() => setInvolvedAgentIds([]), 14000);
       }
-    } catch {
-      const ceoFallbackObj = {
+    } catch (err) {
+      console.error("CEO Brief Error:", err);
+      const ceoErrorObj = {
         sender: "Pak Pakar (CEO)",
-        text: generateNaturalHumanResponse(ceoAgent, briefText),
+        text: "Gagal terhubung ke server backend.",
       };
       
-      setMessages((prev) => [...prev, ceoFallbackObj]);
+      setMessages((prev) => [...prev, ceoErrorObj]);
       setMessagesByAgent((prev) => ({
         ...prev,
-        "ceo-main": [...(prev["ceo-main"] || []), ceoFallbackObj],
+        "ceo-main": [...(prev["ceo-main"] || []), ceoErrorObj],
       }));
-
-      setInvolvedAgentIds(["ceo-main", "content-writer", "design-3d"]);
-      setUnreadAgentIds(["content-writer", "design-3d"]);
-      setTimeout(() => setInvolvedAgentIds([]), 14000);
     } finally {
       setLoading(false);
     }
